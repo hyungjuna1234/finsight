@@ -1,0 +1,11 @@
+{
+  "project": "FinSight",
+  "phase": "3-pro",
+  "steps": [
+    { "step": 0, "name": "entitlement-guard", "status": "pending" },
+    { "step": 1, "name": "pro-views", "status": "pending" },
+    { "step": 2, "name": "insights", "status": "pending" },
+    { "step": 3, "name": "chat-api", "status": "pending" },
+    { "step": 4, "name": "chat-ui", "status": "pending" }
+  ]
+}

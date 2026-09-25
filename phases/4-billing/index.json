@@ -1,0 +1,10 @@
+{
+  "project": "FinSight",
+  "phase": "4-billing",
+  "steps": [
+    { "step": 0, "name": "polar-service", "status": "pending" },
+    { "step": 1, "name": "entitlement-sync", "status": "pending" },
+    { "step": 2, "name": "billing-ui", "status": "pending" },
+    { "step": 3, "name": "account-deletion", "status": "pending" }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "project": "FinSight",
+  "phase": "1-ingest",
+  "steps": [
+    { "step": 0, "name": "fixture-corpus", "status": "pending" },
+    { "step": 1, "name": "file-decode", "status": "pending" },
+    { "step": 2, "name": "table-detect", "status": "pending" },
+    { "step": 3, "name": "column-mapper", "status": "pending" },
+    { "step": 4, "name": "row-parser", "status": "pending" },
+    { "step": 5, "name": "categorizer", "status": "pending" },
+    { "step": 6, "name": "upload-api", "status": "pending" },
+    { "step": 7, "name": "upload-ui", "status": "pending" }
+  ]
+}

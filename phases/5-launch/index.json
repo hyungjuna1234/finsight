@@ -1,0 +1,12 @@
+{
+  "project": "FinSight",
+  "phase": "5-launch",
+  "steps": [
+    { "step": 0, "name": "landing", "status": "pending" },
+    { "step": 1, "name": "guide-page", "status": "pending" },
+    { "step": 2, "name": "legal-pages", "status": "pending" },
+    { "step": 3, "name": "cleanup-cron", "status": "pending" },
+    { "step": 4, "name": "deploy-config", "status": "pending" },
+    { "step": 5, "name": "e2e-smoke", "status": "pending" }
+  ]
+}

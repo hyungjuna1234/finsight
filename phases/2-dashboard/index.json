@@ -1,0 +1,11 @@
+{
+  "project": "FinSight",
+  "phase": "2-dashboard",
+  "steps": [
+    { "step": 0, "name": "analytics-core", "status": "pending" },
+    { "step": 1, "name": "dashboard", "status": "pending" },
+    { "step": 2, "name": "transactions", "status": "pending" },
+    { "step": 3, "name": "settings-data", "status": "pending" },
+    { "step": 4, "name": "demo", "status": "pending" }
+  ]
+}
