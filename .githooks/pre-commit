@@ -1,0 +1,35 @@
+#!/bin/bash
+# pre-commit: 비밀키·실데이터가 커밋되는 것을 막는다. (plan.md 1-2, SEC-2)
+# 이 레포에서 한 번: git config core.hooksPath .githooks
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+
+# 1) .env 파일(.env.example 제외)은 커밋 금지
+ENV_FILES=$(echo "$STAGED" | grep -E '(^|/)\.env(rc|\..+)?$' | grep -vE '(^|/)\.env\.example$')
+if [ -n "$ENV_FILES" ]; then
+  echo "[pre-commit] .env 파일은 커밋할 수 없습니다:" >&2
+  echo "$ENV_FILES" >&2
+  exit 1
+fi
+
+# 2) 흔한 비밀키 형식 빠른 검사 (gitleaks가 없어도 동작)
+if [ -n "$STAGED" ]; then
+  HITS=$(git diff --cached -U0 -- $STAGED | grep -E '^\+' | grep -nE 'sk-ant-[A-Za-z0-9_-]{10,}|polar_(oat|pat|whs)_[A-Za-z0-9]{10,}|whsec_[A-Za-z0-9+/=]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|sb_secret_[A-Za-z0-9_-]{10,}')
+  if [ -n "$HITS" ]; then
+    echo "[pre-commit] 비밀키로 보이는 값이 있습니다. 커밋을 중단합니다." >&2
+    exit 1
+  fi
+fi
+
+# 3) gitleaks 전체 검사
+if command -v gitleaks >/dev/null 2>&1; then
+  if gitleaks git --help >/dev/null 2>&1; then
+    gitleaks git --pre-commit --staged --redact --no-banner || exit 1
+  else
+    gitleaks protect --staged --redact --no-banner || exit 1
+  fi
+else
+  echo "[pre-commit] gitleaks가 없어 전체 검사를 건너뜁니다. 설치: brew install gitleaks" >&2
+fi
+
+exit 0

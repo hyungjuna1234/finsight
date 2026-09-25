@@ -4,6 +4,18 @@ out/
 next-env.d.ts
 tsconfig.tsbuildinfo
 
+# env / secrets (keep only the template)
+.env*
+!.env.example
+
+# platform & tooling
+.vercel
+supabase/.temp
+coverage/
+test-results/
+playwright-report/
+.DS_Store
+
 # phase execution outputs
 phases/**/phase*-output.json
 phases/**/step*-output.json
