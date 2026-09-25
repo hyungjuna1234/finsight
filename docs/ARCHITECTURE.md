@@ -57,6 +57,7 @@ src/
 └─ test/         empty.ts(server-only 대체) · 공용 테스트 헬퍼
 supabase/ migrations/*.sql · tests/*.test.ts (PGlite)
 ```
+- 위 목록은 주요 파일만 적었다. `phases/*/step*.md`가 지정한 새 파일(예: `lib/domain/upload.ts`, `server/tx-rows.ts`, `components/billing/`)은 레이어 규칙 안에서 만들어도 된다.
 
 ## 도메인 타입 (`src/lib/domain`)
 ```ts
@@ -77,7 +78,7 @@ export type Result<T, E extends string> = { ok: true; value: T } | { ok: false; 
 ```ts
 // ingest
 sniffFile(bytes: Uint8Array, filename: string): Result<Sniff, 'UNSUPPORTED_FORMAT'|'ENCRYPTED_FILE'|'EMPTY_FILE'>
-decodeFile(bytes: Uint8Array, sniff: Sniff): Result<Sheet[], 'ENCODING_ERROR'|'CORRUPT_FILE'|'TOO_MANY_ROWS'|'FILE_TOO_COMPLEX'>
+decodeFile(bytes: Uint8Array, sniff: Sniff): Result<Sheet[], 'ENCODING_ERROR'|'CORRUPT_FILE'|'TOO_MANY_ROWS'|'FILE_TOO_COMPLEX'|'ENCRYPTED_FILE'>
 detectTable(sheets: Sheet[]): Result<TableGuess, 'HEADER_NOT_FOUND'|'BILLING_STATEMENT'|'BANK_STATEMENT'>
 maskSamples(headers: string[], rows: string[][]): { headers: string[]; samples: string[][] }
 headerSignature(headers: string[]): string
@@ -91,7 +92,7 @@ summarizeMonth(txs: TxView[], month: YearMonth): MonthSummary
 compareMonths(current: MonthSummary, previous: MonthSummary): MonthDelta
 monthlyTrend(txs: TxView[], months: YearMonth[]): TrendPoint[]
 detectRecurring(txs: TxView[], asOf: IsoDate): RecurringItem[]
-derivePlan(state: CustomerState, now: Date): { plan: Plan; status: string; periodEnd: Date | null }
+derivePlan(state: CustomerState | null, now: Date, proProductId: string): { plan: Plan; status: string; periodEnd: Date | null }  // lib은 env를 못 읽으므로 상품 ID를 인자로
 isProActive(ent: { plan: Plan; periodEnd: Date | null } | null, now: Date): boolean   // period_end + 7일
 // domain
 formatKRW(amount: KRW): string · toYearMonth(date: Date | IsoDate): YearMonth · safeRedirect(target: string | null, fallback?: string): string
@@ -132,17 +133,19 @@ requirePro: isProActive(entitlement, now) — plan='pro' AND (period_end IS NULL
 ```
 
 ## `server/admin.ts`가 export하는 함수 (admin 권한은 여기서만)
-- `adminEntitlements`: `get(userId)`, `upsertIfNewer(userId, value, startedAt)`, `markFreeInsightUsed(userId)`
-- `adminStorage`: `createUploadUrl(path)`, `read(path)`, `remove(paths)`, `removePrefix(prefix)`(목록을 페이지 단위로 끝까지), `listExpiredOriginals(before)`
-- `adminAuth`: `deleteUser(userId)`
+- `adminStorage` (1-ingest): `createUploadUrl(path)`, `read(path)`, `remove(paths)`, `removePrefix(prefix)`(prefix는 `/`로 끝남, 목록을 페이지 단위로 끝까지) · 5-launch: `listExpiredOriginals(before, limit)`
+- `adminEntitlements` (3-pro): `get(userId)`, `markFreeInsightUsed(userId)`(조건부 update) · 4-billing: `upsertIfNewer(userId, value, startedAt)`
+- `adminAuth` (4-billing): `deleteUser(userId)`
+- `adminUploads` (5-launch cron): `markOriginalDeleted(ids, at)`, `listStale(before, limit)`, `deleteStale(ids, before)`
 모든 함수는 `userId`나 경로를 인자로 받고, 요청 body가 아니라 세션에서 온 값만 넘긴다.
 
 ## 외부 서비스 래퍼 (`services/*`, 테스트는 `vi.mock`)
 ```ts
-claude.proposeMapping({ headers, samples }) → { mapping: ColumnMapping; confidence: number }     // haiku, 20s
-claude.classify(merchantKeys: string[]) → Map<string, Category>                                   // haiku, ≤100개, 30s
-claude.writeInsight(metrics: InsightMetrics) → { headline: string; points: string[]; tips: string[] } // sonnet, 60s, 숫자 금지
-claude.chat({ history, message, tools }) → { text: string }                                        // sonnet, toolRunner, 도구 ≤5회
+claude.proposeMapping({ headers, samples }) → { mapping: MappingColumns; confidence; usage }   // haiku, 20s (headerRowIndex는 호출자가 채움)
+claude.classify(merchantKeys: string[]) → { categories: Map<string, Category>; usage }           // haiku, ≤100개, 30s
+claude.writeInsight(metrics: InsightMetrics) → { content: { headline; points[]; tips[] }; usage } // sonnet, 60s, 숫자 금지
+claude.chat({ history, message, tools, today }) → { text: string; usage }                        // sonnet, toolRunner, 도구 ≤5회
+// usage: ClaudeUsage(models.ts의 toUsage) — 호출자(server/)가 recordAiUsage로 ai_usage에 기록
 polar: createCheckout · getCheckout · createPortalSession · getCustomerState · revokeSubscriptions · validateWebhook
 ```
 - 채팅 도구 2개: `summarize_spending({from,to,groupBy})`, `search_transactions({from,to,query?,category?,limit≤30})`. `userId`는 서버 클로저로 고정, 읽기 전용. 대화 기록은 DB에 저장하지 않고 클라이언트가 최근 10턴까지 보낸다.
