@@ -19,3 +19,8 @@ playwright-report/
 # phase execution outputs
 phases/**/phase*-output.json
 phases/**/step*-output.json
+
+# misc
+*.pem
+build/
+npm-debug.log*
