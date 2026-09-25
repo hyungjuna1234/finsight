@@ -1,0 +1,10 @@
+{
+  "phases": [
+    { "dir": "0-foundation", "status": "pending" },
+    { "dir": "1-ingest", "status": "pending" },
+    { "dir": "2-dashboard", "status": "pending" },
+    { "dir": "3-pro", "status": "pending" },
+    { "dir": "4-billing", "status": "pending" },
+    { "dir": "5-launch", "status": "pending" }
+  ]
+}

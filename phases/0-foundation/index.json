@@ -1,0 +1,12 @@
+{
+  "project": "FinSight",
+  "phase": "0-foundation",
+  "steps": [
+    { "step": 0, "name": "env-domain", "status": "pending" },
+    { "step": 1, "name": "db-schema", "status": "pending" },
+    { "step": 2, "name": "supabase-server", "status": "pending" },
+    { "step": 3, "name": "api-handler", "status": "pending" },
+    { "step": 4, "name": "auth-flow", "status": "pending" },
+    { "step": 5, "name": "consent-gate", "status": "pending" }
+  ]
+}
