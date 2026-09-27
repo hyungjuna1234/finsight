@@ -5,6 +5,7 @@ import { AppError } from "@/lib/domain/errors";
 import type { Plan } from "@/lib/domain/types";
 import { getConsentStatus } from "@/server/actions/consents";
 import { adminEntitlements } from "@/server/admin";
+import { logger } from "@/server/logger";
 import { createServerSupabase } from "@/services/supabase/server";
 
 export interface SessionUser {
@@ -14,10 +15,15 @@ export interface SessionUser {
 
 export async function getOptionalUser(): Promise<SessionUser | null> {
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase.auth.getUser();
+  try {
+    const { data, error } = await supabase.auth.getUser();
 
-  if (error || !data.user) return null;
-  return { id: data.user.id, email: data.user.email ?? null };
+    if (error || !data.user) return null;
+    return { id: data.user.id, email: data.user.email ?? null };
+  } catch {
+    logger.warn("auth_user_unavailable", { code: "SUPABASE_AUTH_UNAVAILABLE" });
+    return null;
+  }
 }
 
 export async function requireUser(): Promise<SessionUser> {

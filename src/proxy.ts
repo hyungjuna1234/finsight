@@ -25,8 +25,13 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  const { data, error } = await supabase.auth.getClaims();
-  const loggedIn = !error && typeof data?.claims?.sub === "string";
+  let loggedIn = false;
+  try {
+    const { data, error } = await supabase.auth.getClaims();
+    loggedIn = !error && typeof data?.claims?.sub === "string";
+  } catch {
+    loggedIn = false;
+  }
   if (!loggedIn && isProtectedPath(request.nextUrl.pathname)) {
     response = NextResponse.redirect(
       new URL(loginRedirectPath(request.nextUrl.pathname, request.nextUrl.search), request.url),

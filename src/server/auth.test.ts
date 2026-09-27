@@ -8,10 +8,14 @@ const { createServerSupabaseMock, getUserMock } = vi.hoisted(() => {
   };
 });
 
-const { getConsentStatusMock } = vi.hoisted(() => ({ getConsentStatusMock: vi.fn() }));
+const { getConsentStatusMock, loggerWarnMock } = vi.hoisted(() => ({
+  getConsentStatusMock: vi.fn(),
+  loggerWarnMock: vi.fn(),
+}));
 
 vi.mock("@/services/supabase/server", () => ({ createServerSupabase: createServerSupabaseMock }));
 vi.mock("@/server/actions/consents", () => ({ getConsentStatus: getConsentStatusMock }));
+vi.mock("@/server/logger", () => ({ logger: { warn: loggerWarnMock } }));
 
 import { getOptionalUser, requireConsent, requireUser } from "./auth";
 
@@ -51,8 +55,24 @@ describe("server auth", () => {
     await expect(getOptionalUser()).resolves.toBeNull();
   });
 
+  it("returns null without exposing details when Supabase throws", async () => {
+    getUserMock.mockRejectedValue(new Error("network failure with sensitive details"));
+
+    await expect(getOptionalUser()).resolves.toBeNull();
+    expect(loggerWarnMock).toHaveBeenCalledWith("auth_user_unavailable", {
+      code: "SUPABASE_AUTH_UNAVAILABLE",
+    });
+    expect(loggerWarnMock.mock.calls.flat().join(" ")).not.toContain("sensitive details");
+  });
+
   it("throws UNAUTHENTICATED when no verified user exists", async () => {
     getUserMock.mockResolvedValue({ data: { user: null }, error: new Error("invalid token") });
+
+    await expect(requireUser()).rejects.toMatchObject({ code: "UNAUTHENTICATED", status: 401 });
+  });
+
+  it("throws UNAUTHENTICATED when Supabase throws", async () => {
+    getUserMock.mockRejectedValue(new Error("network failure"));
 
     await expect(requireUser()).rejects.toMatchObject({ code: "UNAUTHENTICATED", status: 401 });
   });
