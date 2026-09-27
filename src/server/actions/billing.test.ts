@@ -3,19 +3,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AppError } from "@/lib/domain/errors";
 
 const mocks = vi.hoisted(() => ({
-  getCustomerState: vi.fn(), getCheckout: vi.fn(), validateWebhook: vi.fn(),
+  getCustomerState: vi.fn(), getCheckout: vi.fn(), validateWebhook: vi.fn(), createCheckout: vi.fn(), createPortalSession: vi.fn(),
   get: vi.fn(), upsertIfNewer: vi.fn(), warn: vi.fn(), info: vi.fn(), error: vi.fn(),
 }));
 vi.mock("@/services/billing/polar", () => ({
   getCustomerState: mocks.getCustomerState, getCheckout: mocks.getCheckout, validateWebhook: mocks.validateWebhook,
+  createCheckout: mocks.createCheckout, createPortalSession: mocks.createPortalSession,
   WebhookVerificationError: class WebhookVerificationError extends Error {},
 }));
 vi.mock("@/server/admin", () => ({ adminEntitlements: { get: mocks.get, upsertIfNewer: mocks.upsertIfNewer } }));
-vi.mock("@/server/env", () => ({ getServerEnv: () => ({ polarProProductId: "pro-product" }) }));
+vi.mock("@/server/env", () => ({ getServerEnv: () => ({ polarProProductId: "pro-product", appUrl: "https://finsight.example" }) }));
 vi.mock("@/server/logger", () => ({ logger: { warn: mocks.warn, info: mocks.info, error: mocks.error } }));
 
 import { WebhookVerificationError } from "@/services/billing/polar";
-import { confirmCheckout, handlePolarWebhook, syncEntitlement } from "./billing";
+import { confirmCheckout, handlePolarWebhook, openPortal, startCheckout, syncEntitlement } from "./billing";
 
 const uid = "11111111-1111-4111-8111-111111111111";
 const state = (status = "active", end = "2026-10-01T00:00:00Z") => ({ subscriptions: [{
@@ -28,6 +29,8 @@ describe("billing actions", () => {
     mocks.getCustomerState.mockResolvedValue(state());
     mocks.upsertIfNewer.mockResolvedValue("updated");
     mocks.get.mockResolvedValue(null);
+    mocks.createCheckout.mockResolvedValue({ id: "co_1", url: "https://checkout.example/co_1" });
+    mocks.createPortalSession.mockResolvedValue({ url: "https://portal.example/session" });
   });
 
   it("persists a customer-state-derived entitlement", async () => {
@@ -96,5 +99,25 @@ describe("billing actions", () => {
   it("syncs a succeeded checkout", async () => {
     mocks.getCheckout.mockResolvedValue({ status: "succeeded", externalCustomerId: uid });
     await expect(confirmCheckout(uid, "co_1")).resolves.toEqual({ plan: "pro", checkout: "succeeded" });
+  });
+
+  it("syncs first and creates a server-owned checkout with a safe next path", async () => {
+    mocks.getCustomerState.mockResolvedValue(null);
+    await expect(startCheckout({ id: uid, email: "user@example.com" }, { returnTo: "https://evil.example", ipAddress: "203.0.113.1" })).resolves.toEqual({ url: "https://checkout.example/co_1" });
+    expect(mocks.createCheckout).toHaveBeenCalledWith({
+      userId: uid, email: "user@example.com", ipAddress: "203.0.113.1",
+      successUrl: "https://finsight.example/billing/success?checkout_id={CHECKOUT_ID}&next=%2Fdashboard",
+      returnUrl: "https://finsight.example/pricing?checkout=failed",
+    });
+  });
+
+  it("rejects checkout when synchronization finds Pro", async () => {
+    await expect(startCheckout({ id: uid, email: null }, { ipAddress: null })).rejects.toMatchObject({ code: "ALREADY_SUBSCRIBED", status: 409 });
+    expect(mocks.createCheckout).not.toHaveBeenCalled();
+  });
+
+  it("opens the user's portal with the settings return URL", async () => {
+    await expect(openPortal(uid)).resolves.toEqual({ url: "https://portal.example/session" });
+    expect(mocks.createPortalSession).toHaveBeenCalledWith(uid, "https://finsight.example/settings");
   });
 });

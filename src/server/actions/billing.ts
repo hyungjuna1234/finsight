@@ -2,11 +2,15 @@ import "server-only";
 
 import { derivePlan, isProActive } from "@/lib/analytics/plan";
 import { AppError } from "@/lib/domain/errors";
+import { safeRedirect } from "@/lib/domain/redirect";
 import type { Plan } from "@/lib/domain/types";
 import { adminEntitlements } from "@/server/admin";
+import type { SessionUser } from "@/server/auth";
 import { getServerEnv } from "@/server/env";
 import { logger } from "@/server/logger";
 import {
+  createCheckout,
+  createPortalSession,
   getCheckout,
   getCustomerState,
   validateWebhook,
@@ -15,6 +19,29 @@ import {
 } from "@/services/billing/polar";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export async function startCheckout(
+  user: SessionUser,
+  input: { returnTo?: string; ipAddress: string | null },
+): Promise<{ url: string }> {
+  const synced = await syncEntitlement(user.id);
+  if (synced.plan === "pro") throw new AppError("ALREADY_SUBSCRIBED");
+
+  const appUrl = getServerEnv().appUrl;
+  const next = encodeURIComponent(safeRedirect(input.returnTo, "/dashboard"));
+  const checkout = await createCheckout({
+    userId: user.id,
+    email: user.email,
+    ipAddress: input.ipAddress,
+    successUrl: `${appUrl}/billing/success?checkout_id={CHECKOUT_ID}&next=${next}`,
+    returnUrl: `${appUrl}/pricing?checkout=failed`,
+  });
+  return { url: checkout.url };
+}
+
+export async function openPortal(userId: string): Promise<{ url: string }> {
+  return createPortalSession(userId, `${getServerEnv().appUrl}/settings`);
+}
 
 export async function syncEntitlement(userId: string): Promise<{
   outcome: "updated" | "stale" | "unknown_user";

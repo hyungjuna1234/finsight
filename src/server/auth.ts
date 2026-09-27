@@ -48,6 +48,12 @@ export async function getPlan(userId: string, now: Date = new Date()): Promise<V
   };
 }
 
+export async function getOptionalPlan(): Promise<"anonymous" | Plan> {
+  const user = await getOptionalUser();
+  if (user === null) return "anonymous";
+  return (await getPlan(user.id)).plan;
+}
+
 export async function requirePro(userId: string, now: Date = new Date()): Promise<void> {
   if (!(await getPlan(userId, now)).isPro) throw new AppError("PRO_REQUIRED");
 }

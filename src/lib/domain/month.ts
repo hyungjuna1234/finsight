@@ -39,6 +39,11 @@ export function kstToday(now: Date = new Date()): IsoDate {
   return `${kst.getUTCFullYear()}-${pad(kst.getUTCMonth() + 1)}-${pad(kst.getUTCDate())}` as IsoDate;
 }
 
+export function formatKstDate(date: Date): string {
+  const kst = new Date(date.getTime() + KST_OFFSET_MS);
+  return `${kst.getUTCFullYear()}년 ${kst.getUTCMonth() + 1}월 ${kst.getUTCDate()}일`;
+}
+
 export function toYearMonth(input: Date | IsoDate): YearMonth {
   if (input instanceof Date) {
     const kst = new Date(input.getTime() + KST_OFFSET_MS);

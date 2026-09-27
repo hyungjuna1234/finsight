@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { addDays, daysBetween, formatMonthLabel, formatPeriodLabel, isIsoDate, isYearMonth, kstToday, monthRange, monthsBetween, nextMonth, prevMonth, toYearMonth } from "./month";
+import { addDays, daysBetween, formatKstDate, formatMonthLabel, formatPeriodLabel, isIsoDate, isYearMonth, kstToday, monthRange, monthsBetween, nextMonth, prevMonth, toYearMonth } from "./month";
 import type { IsoDate, YearMonth } from "./types";
 
 const iso = (value: string) => value as IsoDate;
 const ym = (value: string) => value as YearMonth;
 
 describe("KST date helpers", () => {
+  it("UTC 날짜를 KST 결제 기간 날짜로 표시한다", () => {
+    expect(formatKstDate(new Date("2026-10-25T15:30:00.000Z"))).toBe("2026년 10월 26일");
+  });
   it("UTC 시각을 KST 날짜와 월로 변환한다", () => {
     const now = new Date("2026-08-31T15:30:00.000Z");
     expect(kstToday(now)).toBe("2026-09-01");

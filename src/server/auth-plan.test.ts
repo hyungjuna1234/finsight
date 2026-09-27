@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getEntitlementMock } = vi.hoisted(() => ({ getEntitlementMock: vi.fn() }));
+const { getEntitlementMock, createSbMock } = vi.hoisted(() => ({ getEntitlementMock: vi.fn(), createSbMock: vi.fn() }));
 vi.mock("@/server/admin", () => ({ adminEntitlements: { get: getEntitlementMock } }));
+vi.mock("@/services/supabase/server", () => ({ createServerSupabase: createSbMock }));
 
-import { getPlan, requirePro } from "./auth";
+import { getOptionalPlan, getPlan, requirePro } from "./auth";
 
 describe("plan authorization", () => {
   const now = new Date("2026-09-27T00:00:00.000Z");
@@ -29,5 +30,17 @@ describe("plan authorization", () => {
   it("throws the public 402 error for Free", async () => {
     getEntitlementMock.mockResolvedValue(null);
     await expect(requirePro("user-1", now)).rejects.toMatchObject({ code: "PRO_REQUIRED", status: 402 });
+  });
+
+  it("returns anonymous without reading a plan when signed out", async () => {
+    createSbMock.mockResolvedValue({ auth: { getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }) } });
+    await expect(getOptionalPlan()).resolves.toBe("anonymous");
+    expect(getEntitlementMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the signed-in user's active plan", async () => {
+    createSbMock.mockResolvedValue({ auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1", email: null } }, error: null }) } });
+    getEntitlementMock.mockResolvedValue({ plan: "pro", periodEnd: null, freeInsightUsedAt: null });
+    await expect(getOptionalPlan()).resolves.toBe("pro");
   });
 });

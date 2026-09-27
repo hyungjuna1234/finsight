@@ -1,7 +1,8 @@
 import "server-only";
 
+import { isProActive } from "@/lib/analytics/plan";
 import { AppError } from "@/lib/domain/errors";
-import type { IsoDate } from "@/lib/domain/types";
+import type { IsoDate, Plan } from "@/lib/domain/types";
 import { requireUser } from "@/server/auth";
 import { createServerSupabase } from "@/services/supabase/server";
 
@@ -43,4 +44,16 @@ export async function getSettings(): Promise<{ uploads: UploadListItem[]; cards:
     })),
     cards,
   };
+}
+
+export async function getSubscriptionSummary(now: Date = new Date()): Promise<{
+  plan: Plan; status: string; periodEnd: string | null; active: boolean;
+}> {
+  const user = await requireUser();
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase.from("entitlements").select("plan,status,period_end").eq("user_id", user.id).maybeSingle();
+  if (error) throw new AppError("INTERNAL");
+  const plan = (data?.plan ?? "free") as Plan;
+  const periodEnd = data?.period_end ?? null;
+  return { plan, status: data?.status ?? "none", periodEnd, active: isProActive({ plan, periodEnd: periodEnd ? new Date(periodEnd) : null }, now) };
 }

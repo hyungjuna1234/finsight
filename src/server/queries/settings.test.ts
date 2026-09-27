@@ -3,7 +3,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ requireUser: vi.fn(), createSb: vi.fn() }));
 vi.mock("@/server/auth", () => ({ requireUser: mocks.requireUser }));
 vi.mock("@/services/supabase/server", () => ({ createServerSupabase: mocks.createSb }));
-import { getSettings } from "./settings";
+import { getSettings, getSubscriptionSummary } from "./settings";
 
 beforeEach(() => { vi.clearAllMocks(); mocks.requireUser.mockResolvedValue({ id: "u1" }); });
 
@@ -20,4 +20,11 @@ it("업로드와 카드를 필요한 표시 형태로 매핑한다", async () =>
   });
   expect(mocks.requireUser).toHaveBeenCalledBefore(mocks.createSb);
   expect(uploadOrder).toHaveBeenCalledWith("created_at", { ascending: false });
+});
+
+it("returns an active subscription summary after requiring the user", async () => {
+  const single = vi.fn().mockResolvedValue({ data: { plan: "pro", status: "past_due", period_end: "2026-10-26T00:00:00.000Z" }, error: null });
+  mocks.createSb.mockResolvedValue({ from: vi.fn(() => ({ select: vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle: single })) })) })) });
+  await expect(getSubscriptionSummary(new Date("2026-10-27T00:00:00.000Z"))).resolves.toEqual({ plan: "pro", status: "past_due", periodEnd: "2026-10-26T00:00:00.000Z", active: true });
+  expect(mocks.requireUser).toHaveBeenCalledBefore(mocks.createSb);
 });
