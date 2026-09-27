@@ -5,10 +5,10 @@
     {
       "step": 0,
       "name": "analytics-core",
-      "status": "error",
+      "status": "completed",
       "started_at": "2026-09-27T14:23:33+0900",
-      "error_message": "[3회 시도 후 실패] Step did not update status",
-      "failed_at": "2026-09-27T14:28:57+0900"
+      "summary": "src/lib/analytics의 summarizeMonth·compareMonths·monthlyTrend·detectRecurring 집계와 도메인 날짜·금액 헬퍼, src/test/tx-factory.ts를 테스트로 검증",
+      "completed_at": "2026-09-27T17:27:03+0900"
     },
     {
       "step": 1,
