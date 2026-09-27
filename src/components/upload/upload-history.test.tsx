@@ -1,0 +1,10 @@
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { expect, it, vi } from "vitest";
+const mocks = vi.hoisted(() => ({ api: vi.fn(), refresh: vi.fn() }));
+vi.mock("@/components/ui/api-fetch", () => ({ apiFetch: mocks.api }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: mocks.refresh }) }));
+import { UploadHistory, type UploadHistoryItem } from "./upload-history";
+const upload: UploadHistoryItem = { id: "u1", filename: "내역.csv", status: "done", createdAt: "2026-09-30", periodFrom: "2026-07-01" as UploadHistoryItem["periodFrom"], periodTo: "2026-09-30" as UploadHistoryItem["periodTo"], inserted: 12, cardName: "신한", originalDeleted: false };
+it("빈 목록은 업로드 링크를 보여 준다", () => { render(<UploadHistory uploads={[]} />); expect(screen.getByRole("link", { name: "업로드" })).toHaveAttribute("href", "/upload"); });
+it("상세 정보와 겹친 거래 경고 후 삭제한다", async () => { const user = userEvent.setup(); mocks.api.mockResolvedValue(undefined); render(<UploadHistory uploads={[upload]} />); expect(screen.getByText(/2026\.07\.01 ~ 09\.30/)).toBeInTheDocument(); expect(screen.getByText("원본 보관 중(90일 후 자동 삭제)")).toBeInTheDocument(); await user.click(screen.getByRole("button", { name: "삭제" })); expect(screen.getByText(/기간이 겹치는 다른 파일/)).toBeInTheDocument(); await user.click(screen.getByRole("button", { name: "삭제할게요" })); expect(mocks.api).toHaveBeenCalledWith("/api/uploads/u1", { method: "DELETE" }); expect(await screen.findByText("삭제했어요")).toBeInTheDocument(); expect(mocks.refresh).toHaveBeenCalled(); });
