@@ -221,7 +221,9 @@ class StepExecutor:
             f"   - {self.MAX_RETRIES}회 수정 시도 후에도 실패 → \"error\" + \"error_message\" 기록\n"
             f"   - 사용자 개입이 필요한 경우 (API 키, 인증, 수동 설정 등) → \"blocked\" + \"blocked_reason\" 기록 후 즉시 중단\n"
             f"6. 직접 커밋하지 마라. 샌드박스에서 .git은 읽기 전용이고, 하네스가 step 종료 후 커밋한다:\n"
-            f"   {commit_example}\n\n---\n\n"
+            f"   {commit_example}\n"
+            f"7. 샌드박스에서 `npm run build`가 Turbopack의 포트 바인딩 `Operation not permitted`로 실패하는 것은 환경 제약이다.\n"
+            f"   `npx next build --webpack`으로 대신 확인하고, 통과하면 blocked가 아니라 completed로 둬라. Turbopack 빌드는 하네스 밖에서 다시 검증한다.\n\n---\n\n"
         )
 
     # --- Codex 호출 ---
