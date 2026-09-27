@@ -29,7 +29,10 @@
     {
       "step": 3,
       "name": "settings-data",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T17:42:13+0900",
+      "summary": "업로드 목록·삭제와 확인 문구 기반 전체 데이터 삭제를 구현하고, 탈퇴에도 재사용할 TypedConfirm 및 구독 관리·탈퇴 자리 섹션을 추가",
+      "completed_at": "2026-09-27T17:48:22+0900"
     },
     {
       "step": 4,
