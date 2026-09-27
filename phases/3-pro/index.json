@@ -29,7 +29,10 @@
     {
       "step": 3,
       "name": "chat-api",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T18:15:23+0900",
+      "summary": "Pro 전용 비저장 채팅 API와 사용자 고정 읽기 도구 2개, Claude 도구 실행·사용량 기록을 구현",
+      "completed_at": "2026-09-27T18:20:49+0900"
     },
     {
       "step": 4,
