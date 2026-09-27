@@ -3,14 +3,15 @@ import { z } from "zod";
 
 import { AppError } from "@/lib/domain/errors";
 
-const { getPublicEnvMock, getServerEnvMock, loggerErrorMock, requireUserMock } = vi.hoisted(() => ({
+const { getPublicEnvMock, getServerEnvMock, loggerErrorMock, requireConsentMock, requireUserMock } = vi.hoisted(() => ({
   getPublicEnvMock: vi.fn(() => ({ appUrl: "https://finsight.example" })),
   getServerEnvMock: vi.fn(() => ({ cronSecret: "cron-secret" })),
   loggerErrorMock: vi.fn(),
+  requireConsentMock: vi.fn(),
   requireUserMock: vi.fn(),
 }));
 
-vi.mock("./auth", () => ({ requireUser: requireUserMock }));
+vi.mock("./auth", () => ({ requireConsent: requireConsentMock, requireUser: requireUserMock }));
 vi.mock("./env", () => ({ getPublicEnv: getPublicEnvMock, getServerEnv: getServerEnvMock }));
 vi.mock("./logger", () => ({ logger: { error: loggerErrorMock } }));
 
@@ -22,6 +23,26 @@ describe("handler", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireUserMock.mockResolvedValue({ id: "user-1", email: null });
+    requireConsentMock.mockResolvedValue(undefined);
+  });
+
+  it("checks consent after authenticating and before the callback", async () => {
+    const order: string[] = [];
+    requireUserMock.mockImplementation(async () => {
+      order.push("auth");
+      return { id: "user-1", email: null };
+    });
+    requireConsentMock.mockImplementation(async () => { order.push("consent"); });
+    const fn = vi.fn(async () => { order.push("callback"); });
+
+    const response = await handler({ auth: "user", consent: true }, fn)(
+      new Request("https://finsight.example/api/test"),
+      route,
+    );
+
+    expect(response.status).toBe(204);
+    expect(requireConsentMock).toHaveBeenCalledWith("user-1");
+    expect(order).toEqual(["auth", "consent", "callback"]);
   });
 
   it("rejects a mismatched Origin before authentication", async () => {

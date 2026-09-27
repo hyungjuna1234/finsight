@@ -4,7 +4,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import type { ZodType } from "zod";
 
 import { AppError, ERROR_MESSAGES, ERROR_STATUS, isAppError, type ErrorCode } from "@/lib/domain/errors";
-import { requireUser, type SessionUser } from "@/server/auth";
+import { requireConsent, requireUser, type SessionUser } from "@/server/auth";
 import { getPublicEnv, getServerEnv } from "@/server/env";
 import { logger } from "@/server/logger";
 
@@ -13,6 +13,7 @@ type AuthMode = "user" | "public" | "cron";
 interface HandlerOptions<B> {
   auth: AuthMode;
   body?: ZodType<B>;
+  consent?: boolean;
 }
 
 interface HandlerContext<B, P> {
@@ -79,6 +80,7 @@ export function handler<B = undefined, P = Record<string, string>>(
       let user: SessionUser | null = null;
       if (opts.auth === "user") {
         user = await requireUser();
+        if (opts.consent) await requireConsent(user.id);
       } else if (opts.auth === "cron") {
         const authorization = req.headers.get("authorization") ?? "";
         const received = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";

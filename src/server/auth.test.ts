@@ -8,12 +8,23 @@ const { createServerSupabaseMock, getUserMock } = vi.hoisted(() => {
   };
 });
 
-vi.mock("@/services/supabase/server", () => ({ createServerSupabase: createServerSupabaseMock }));
+const { getConsentStatusMock } = vi.hoisted(() => ({ getConsentStatusMock: vi.fn() }));
 
-import { getOptionalUser, requireUser } from "./auth";
+vi.mock("@/services/supabase/server", () => ({ createServerSupabase: createServerSupabaseMock }));
+vi.mock("@/server/actions/consents", () => ({ getConsentStatus: getConsentStatusMock }));
+
+import { getOptionalUser, requireConsent, requireUser } from "./auth";
 
 describe("server auth", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it("requires every current consent", async () => {
+    getConsentStatusMock.mockResolvedValue({ missing: ["terms"] });
+    await expect(requireConsent("user-1")).rejects.toMatchObject({ code: "CONSENT_REQUIRED" });
+
+    getConsentStatusMock.mockResolvedValue({ missing: [] });
+    await expect(requireConsent("user-1")).resolves.toBeUndefined();
+  });
 
   it("returns only the trusted session user fields", async () => {
     getUserMock.mockResolvedValue({
