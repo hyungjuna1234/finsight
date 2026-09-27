@@ -53,7 +53,10 @@
     {
       "step": 6,
       "name": "upload-api",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T14:01:39+0900",
+      "summary": "KST 일일 상한·AI 사용량 기록, 안전한 adminStorage, 업로드 생성·분석·확정·재분류·삭제 액션과 동기 Route Handler 5개를 구현",
+      "completed_at": "2026-09-27T14:10:01+0900"
     },
     {
       "step": 7,
