@@ -37,7 +37,10 @@
     {
       "step": 4,
       "name": "auth-flow",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T13:13:52+0900",
+      "summary": "서버 PKCE 기반 카카오·구글 OAuth 시작·callback·로그아웃 흐름과 인앱 브라우저 안내 로그인 화면, 인증 앱 레이아웃을 구현하고 테스트했다.",
+      "completed_at": "2026-09-27T13:18:23+0900"
     },
     {
       "step": 5,
