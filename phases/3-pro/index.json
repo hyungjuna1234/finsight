@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "insights",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T18:06:11+0900",
+      "summary": "집계값 전용 AI 인사이트 생성·무료 크레딧 보호·저장/조회 API와 리포트 UI를 구현",
+      "completed_at": "2026-09-27T18:15:22+0900"
     },
     {
       "step": 3,
