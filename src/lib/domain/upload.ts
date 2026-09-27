@@ -28,3 +28,14 @@ export function checkUploadFile(f: {
   if (!fileExtension(f.name)) return "UNSUPPORTED_FORMAT";
   return null;
 }
+import type { IsoDate } from "./types";
+
+export type { ColumnMapping } from "@/lib/ingest/mapping";
+import type { ColumnMapping } from "@/lib/ingest/mapping";
+
+export type CardChoice = { id: string } | { name: string };
+export interface UploadPreview { sheetName: string; headerRowIndex: number; rows: string[][] }
+export interface CreateUploadResponse { uploadId: string; uploadUrl: string }
+export interface AnalyzeResponse { preview: UploadPreview; mapping: ColumnMapping | null; autoConfirm: boolean }
+export interface ConfirmResponse { inserted: number; duplicates: number; pending: number; period: { from: IsoDate; to: IsoDate } | null }
+export interface RecategorizeResponse { updated: number; pending: number }
