@@ -14,6 +14,15 @@ function safePath(path: string): void {
 function bucket() { return createAdminSupabase().storage.from("statements"); }
 function internal(): never { throw new AppError("INTERNAL"); }
 
+function databaseError(event: string, error: { code?: string } | null): never {
+  logger.error(event, error, { code: error?.code ?? null });
+  return internal();
+}
+
+function cleanupRows(data: { id: string; storage_path: string }[] | null): { id: string; storagePath: string }[] {
+  return (data ?? []).map(({ id, storage_path: storagePath }) => ({ id, storagePath }));
+}
+
 function authErrorStatus(error: unknown): number | null {
   if (typeof error !== "object" || error === null) return null;
   const candidate = error as { status?: unknown; statusCode?: unknown };
@@ -82,6 +91,56 @@ export const adminStorage = {
       if (error) internal();
     }
     return files.length;
+  },
+  async listExpiredOriginals(before: Date, limit: number): Promise<{ id: string; storagePath: string }[]> {
+    const { data, error } = await createAdminSupabase()
+      .from("uploads")
+      .select("id,storage_path")
+      .is("original_deleted_at", null)
+      .lt("created_at", before.toISOString())
+      .order("created_at", { ascending: true })
+      .limit(limit);
+    if (error) databaseError("admin.storage.list_expired", error);
+    return cleanupRows(data);
+  },
+};
+
+export const adminUploads = {
+  async markOriginalDeleted(ids: string[], at: Date): Promise<number> {
+    if (ids.length === 0) return 0;
+    const { data, error } = await createAdminSupabase()
+      .from("uploads")
+      .update({ original_deleted_at: at.toISOString() })
+      .is("original_deleted_at", null)
+      .in("id", ids)
+      .select("id");
+    if (error) databaseError("admin.uploads.mark_original_deleted", error);
+    return data?.length ?? 0;
+  },
+
+  async listStale(before: Date, limit: number): Promise<{ id: string; storagePath: string }[]> {
+    const { data, error } = await createAdminSupabase()
+      .from("uploads")
+      .select("id,storage_path")
+      .eq("status", "uploaded")
+      .lt("created_at", before.toISOString())
+      .order("created_at", { ascending: true })
+      .limit(limit);
+    if (error) databaseError("admin.uploads.list_stale", error);
+    return cleanupRows(data);
+  },
+
+  async deleteStale(ids: string[], before: Date): Promise<number> {
+    if (ids.length === 0) return 0;
+    const { data, error } = await createAdminSupabase()
+      .from("uploads")
+      .delete()
+      .in("id", ids)
+      .eq("status", "uploaded")
+      .lt("created_at", before.toISOString())
+      .select("id");
+    if (error) databaseError("admin.uploads.delete_stale", error);
+    return data?.length ?? 0;
   },
 };
 

@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/services/supabase/admin", () => ({ createAdminSupabase: () => ({ storage: { from: () => mocks.bucket }, from: mocks.from, auth: { admin: { deleteUser: mocks.deleteUser } } }) }));
 
-import { adminAuth, adminEntitlements, adminStorage, storagePathFor } from "./admin";
+import { adminAuth, adminEntitlements, adminStorage, adminUploads, storagePathFor } from "./admin";
 
 const uid = "11111111-1111-4111-8111-111111111111";
 
@@ -47,6 +47,68 @@ describe("admin storage", () => {
     await expect(adminStorage.read("/bad")).rejects.toThrow();
     await expect(adminStorage.removePrefix(`${uid}/folder`)).rejects.toThrow();
     await expect(adminStorage.remove([`${uid}/../other`])).rejects.toThrow();
+  });
+
+  it("lists expired originals with a bounded query", async () => {
+    const limit = vi.fn().mockResolvedValue({ data: [{ id: "upload-1", storage_path: `${uid}/upload/original` }], error: null });
+    const order = vi.fn(() => ({ limit }));
+    const lt = vi.fn(() => ({ order }));
+    const is = vi.fn(() => ({ lt }));
+    const select = vi.fn(() => ({ is }));
+    mocks.from.mockReturnValue({ select });
+    const before = new Date("2026-06-29T00:00:00.000Z");
+
+    await expect(adminStorage.listExpiredOriginals(before, 200)).resolves.toEqual([
+      { id: "upload-1", storagePath: `${uid}/upload/original` },
+    ]);
+    expect(is).toHaveBeenCalledWith("original_deleted_at", null);
+    expect(lt).toHaveBeenCalledWith("created_at", before.toISOString());
+    expect(limit).toHaveBeenCalledWith(200);
+  });
+});
+
+describe("admin uploads", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("marks only originals that are not already marked", async () => {
+    const select = vi.fn().mockResolvedValue({ data: [{ id: "one" }], error: null });
+    const inIds = vi.fn(() => ({ select }));
+    const is = vi.fn(() => ({ in: inIds }));
+    const update = vi.fn(() => ({ is }));
+    mocks.from.mockReturnValue({ update });
+    const at = new Date("2026-09-27T00:00:00.000Z");
+
+    await expect(adminUploads.markOriginalDeleted(["one", "two"], at)).resolves.toBe(1);
+    expect(update).toHaveBeenCalledWith({ original_deleted_at: at.toISOString() });
+    expect(is).toHaveBeenCalledWith("original_deleted_at", null);
+  });
+
+  it("lists only stale uploaded rows", async () => {
+    const limit = vi.fn().mockResolvedValue({ data: [], error: null });
+    const order = vi.fn(() => ({ limit }));
+    const lt = vi.fn(() => ({ order }));
+    const eq = vi.fn(() => ({ lt }));
+    const select = vi.fn(() => ({ eq }));
+    mocks.from.mockReturnValue({ select });
+    const before = new Date("2026-09-26T00:00:00.000Z");
+
+    await adminUploads.listStale(before, 200);
+    expect(eq).toHaveBeenCalledWith("status", "uploaded");
+    expect(lt).toHaveBeenCalledWith("created_at", before.toISOString());
+  });
+
+  it("rechecks status and age when deleting stale rows", async () => {
+    const select = vi.fn().mockResolvedValue({ data: [{ id: "one" }], error: null });
+    const lt = vi.fn(() => ({ select }));
+    const eq = vi.fn(() => ({ lt }));
+    const inIds = vi.fn(() => ({ eq }));
+    const remove = vi.fn(() => ({ in: inIds }));
+    mocks.from.mockReturnValue({ delete: remove });
+    const before = new Date("2026-09-26T00:00:00.000Z");
+
+    await expect(adminUploads.deleteStale(["one"], before)).resolves.toBe(1);
+    expect(eq).toHaveBeenCalledWith("status", "uploaded");
+    expect(lt).toHaveBeenCalledWith("created_at", before.toISOString());
   });
 });
 
