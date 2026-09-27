@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "entitlement-sync",
-      "status": "pending"
+      "status": "completed",
+      "summary": "derivePlan 시그니처 확장, 조건부 adminEntitlements.upsertIfNewer, syncEntitlement/confirmCheckout/handlePolarWebhook 및 billing confirm·Polar webhook 라우트 구현",
+      "started_at": "2026-09-27T18:32:16+0900",
+      "completed_at": "2026-09-27T18:38:06+0900"
     },
     {
       "step": 2,
