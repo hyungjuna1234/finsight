@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/ARCHITECTURE.md` (핵심 순수 함수, 파일 제한, 인코딩, `identityKey`)
 - `/docs/USER_FLOWS.md` (예외·오류 처리의 "파일"·"거래 해석")
 - `/docs/ADR.md` (ADR-003, ADR-004, ADR-006)

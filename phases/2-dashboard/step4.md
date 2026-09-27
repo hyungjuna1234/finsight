@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/ARCHITECTURE.md` (레이어 규칙: "components는 props만 → `/demo`가 같은 컴포넌트를 정적 데이터로 재사용")
 - `/docs/PRD.md` (전환 장치: `/demo`), `/docs/USER_FLOWS.md` (① 랜딩 → `/demo` → [내 데이터로 시작]), `/docs/UI_GUIDE.md`
 - `/src/lib/analytics/month.ts`, `/src/lib/analytics/compare.ts`, `/src/lib/analytics/recurring.ts` (Step 0)
@@ -73,6 +73,6 @@ npm run test
 
 - 데모용으로 대시보드 컴포넌트를 복사하거나 분기 코드를 넣지 마라. 이유: "실제 화면과 같아요"가 약속이고, props-only 설계의 목적이 이 재사용이다.
 - 데모 인사이트를 실행 시 Claude로 생성하지 마라. 이유: 비로그인 공개 페이지에서 AI 비용·남용이 생긴다. 미리 쓴 문장만 쓴다.
-- 실제 명세서나 실제 사람의 거래를 fixture로 넣지 마라. 이유: 레포에 실데이터를 두지 않는다(CLAUDE.md, ADR-011).
+- 실제 명세서나 실제 사람의 거래를 fixture로 넣지 마라. 이유: 레포에 실데이터를 두지 않는다(AGENTS.md, ADR-011).
 - `/demo`를 로그인 보호 경로에 넣거나 `(app)` 그룹 아래에 두지 마라. 이유: 로그인 없는 전환 장치다.
 - 기존 테스트를 깨뜨리지 마라.

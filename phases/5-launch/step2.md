@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/PRD.md`, `/docs/ARCHITECTURE.md` (저장하는 데이터, Storage, 외부 서비스), `/docs/ADR.md` (ADR-002·007·008)
 - `/plan.md` 2장(보관), 4-5장(DB), 11장(법률 검토 필요)
 - `/src/lib/domain/consent.ts` (0-foundation: 동의 항목 링크 `/privacy`, `/privacy#overseas`, `/terms`)

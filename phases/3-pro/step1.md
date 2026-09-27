@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md` (Pro는 서버에서만 허용)
+- `/AGENTS.md` (Pro는 서버에서만 허용)
 - `/docs/PRD.md` (전환 장치: Pro 티저), `/docs/USER_FLOWS.md` (③ Pro 티저 목록), `/docs/UI_GUIDE.md` (잠긴 Pro 영역, 증감 색·기호, 차트)
 - `/src/lib/analytics/plan.ts`, `/src/server/auth.ts` (`getPlan`, `requirePro`), `/src/server/queries/plan.ts` (Step 0)
 - `/src/lib/analytics/compare.ts`, `/src/lib/analytics/recurring.ts`, `/src/lib/analytics/month.ts` (2-dashboard Step 0)

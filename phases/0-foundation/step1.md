@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/ARCHITECTURE.md` (데이터베이스 표, 일일 상한, Storage)
 - `/docs/ADR.md` (ADR-002, ADR-006, ADR-010)
 - `/src/lib/domain/categories.ts`, `/src/lib/domain/types.ts` (Step 0 산출물)

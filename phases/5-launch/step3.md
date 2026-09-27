@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/ARCHITECTURE.md` (업로드 처리의 cron 줄, `server/admin.ts` 함수 목록, API 표의 `/api/cron/cleanup`, `uploads` 테이블)
 - `/plan.md` 2장(원본 90일 보관), 3-3장(업로드 흐름)
 - `/src/server/admin.ts`와 테스트 (1-ingest `adminStorage.remove`·`removePrefix`, 경로 검증 규칙)

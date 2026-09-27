@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md` (CRITICAL: Claude에는 최소 데이터만, AI 출력은 zod로 검증)
+- `/AGENTS.md` (CRITICAL: Claude에는 최소 데이터만, AI 출력은 zod로 검증)
 - `/docs/ARCHITECTURE.md` (외부 서비스 래퍼, "Claude 공통", 외부 SDK 메모의 Anthropic 항목)
 - `/docs/ADR.md` (ADR-004, ADR-007)
 - `/src/server/env.ts` (`getServerEnv().anthropicApiKey`), `/src/lib/domain/errors.ts` (`AppError`) (0-foundation)
@@ -83,10 +83,10 @@ npm run test
 
 ## 금지사항
 
-- 테스트에서 실제 Anthropic API를 호출하지 마라. 이유: 키가 없고, 테스트는 네트워크를 쓰지 않는다(CLAUDE.md).
-- 마스킹 안 된 셀이나 5행을 넘는 샘플을 이 함수 안에서 만들어 보내지 마라. 이유: CLAUDE.md CRITICAL "Claude에는 최소 데이터만".
+- 테스트에서 실제 Anthropic API를 호출하지 마라. 이유: 키가 없고, 테스트는 네트워크를 쓰지 않는다(AGENTS.md).
+- 마스킹 안 된 셀이나 5행을 넘는 샘플을 이 함수 안에서 만들어 보내지 마라. 이유: AGENTS.md CRITICAL "Claude에는 최소 데이터만".
 - 헤더·셀 문자열을 system 프롬프트에 끼워 넣지 마라. 이유: 가맹점명·헤더를 통한 prompt injection. 데이터는 user 메시지의 JSON 안에만 둔다.
 - Haiku 요청에 `thinking`·`output_config.effort`·assistant prefill을 넣지 마라. 이유: 이 모델에서 지원되지 않거나 400 에러가 난다.
-- 에러 메시지·프롬프트·응답 본문을 로그나 AppError detail에 남기지 마라. 이유: 파일 내용이 로그로 샌다(CLAUDE.md CRITICAL).
+- 에러 메시지·프롬프트·응답 본문을 로그나 AppError detail에 남기지 마라. 이유: 파일 내용이 로그로 샌다(AGENTS.md CRITICAL).
 - 헤더 캐시(`header_mappings`)·일일 상한·`ai_usage` 기록을 이 파일에 넣지 마라. 이유: services는 SDK 래퍼만 담당한다. 그 로직은 Step 6(`server/`)의 몫이다.
 - 기존 테스트를 깨뜨리지 마라.

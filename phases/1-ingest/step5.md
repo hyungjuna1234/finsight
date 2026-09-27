@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md` (CRITICAL: 분류에는 가맹점명만, AI 출력은 enum 검증)
+- `/AGENTS.md` (CRITICAL: 분류에는 가맹점명만, AI 출력은 enum 검증)
 - `/docs/ARCHITECTURE.md` (`categorizeByRule`, `claude.classify`, 업로드 처리의 분류 순서, `transactions`·`category_overrides` 테이블)
 - `/docs/ADR.md` (ADR-005)
 - `/src/lib/domain/categories.ts`(`CATEGORIES`, `isCategory`, `DEFAULT_CATEGORY`), `/src/lib/domain/types.ts`(`CategorySource`), `/src/lib/domain/errors.ts` (0-foundation)
@@ -84,7 +84,7 @@ npm run test
 
 ## 금지사항
 
-- Claude에 금액·날짜·원문 가맹점(`merchant_raw`)·사용자 정보를 보내지 마라. 이유: CLAUDE.md CRITICAL "분류 = 가맹점명만". 숫자 마스킹된 `merchantKey`만 보낸다.
+- Claude에 금액·날짜·원문 가맹점(`merchant_raw`)·사용자 정보를 보내지 마라. 이유: AGENTS.md CRITICAL "분류 = 가맹점명만". 숫자 마스킹된 `merchantKey`만 보낸다.
 - 모델 응답의 가맹점 문자열을 Map 키로 쓰지 마라. 이유: 모델이 이름을 바꿔 쓰거나 주입된 문자열로 다른 키를 덮어쓸 수 있다. 인덱스로만 되짚는다.
 - 다른 사용자의 분류 결과를 참고하지 마라(전역 캐시 금지). 이유: 캐시 오염(ADR-004·005). history는 본인 거래만.
 - `category_source = 'user'`인 분류를 덮어쓰는 경로를 만들지 마라. 이유: 사용자가 고친 결과가 사라진다.

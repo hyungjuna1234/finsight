@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/USER_FLOWS.md` (① 첫 방문, 인증 예외)
 - `/docs/ARCHITECTURE.md` (API 표의 `/auth/*`, Supabase SSR 메모)
 - `/docs/UI_GUIDE.md`

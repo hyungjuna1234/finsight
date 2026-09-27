@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/ARCHITECTURE.md` (API 표의 `/api/account/delete-data`·`DELETE /api/uploads/:id`, DB 표, `server/admin.ts` 함수 목록)
 - `/docs/ADR.md` (ADR-006 트레이드오프: 겹치는 업로드 삭제 시 공유 거래도 빠짐)
 - `/docs/USER_FLOWS.md` (④ 구독·데이터·탈퇴), `/docs/UI_GUIDE.md` (문구, 버튼)

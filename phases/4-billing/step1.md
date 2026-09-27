@@ -6,7 +6,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/ARCHITECTURE.md` (Pro 권한, `server/admin.ts` 함수 목록, API 표, 에러 코드 표)
 - `/docs/ADR.md` (ADR-008) · `/plan.md` 3-4장 · `/ops/polar-approval-request.md`
 - `/src/services/billing/polar.ts`와 테스트 (Step 0)

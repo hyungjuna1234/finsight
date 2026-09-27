@@ -6,7 +6,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/USER_FLOWS.md` (③ 결제, ④ 구독, 결제 예외) · `/docs/UI_GUIDE.md` · `/docs/PRD.md` (가격)
 - `/docs/ARCHITECTURE.md` (API 표, 에러 코드 표의 `ALREADY_SUBSCRIBED`·`BILLING_UNAVAILABLE`)
 - `/src/services/billing/polar.ts`, `/src/server/actions/billing.ts`, `/src/lib/analytics/plan.ts` (Step 0·1)

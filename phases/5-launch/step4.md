@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/ARCHITECTURE.md` (구성도의 Vercel icn1·Cron, 업로드 처리의 `maxDuration`, 외부 SDK 메모)
 - `/plan.md` 1-2장(AI 마크다운 허용 목록 + 기본 CSP), 2장(Vercel `icn1`), 12장 6번(보안 헤더 점검)
 - `/ops/README.md` (배포·env 등록은 사람이 `finsight-ops/`에서 한다)

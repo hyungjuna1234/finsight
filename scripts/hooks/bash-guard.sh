@@ -1,8 +1,8 @@
 #!/bin/bash
-# Bash Guard Hook — PreToolUse[Bash]
+# Bash Guard Hook — PreToolUse[Bash] (Claude Code·Codex 공용)
 # 되돌릴 수 없는 명령과 운영 환경에 닿는 CLI를 차단한다.
 # 운영 작업(supabase link/db push, vercel 배포, psql)은 사람이 finsight-ops/ clone에서 한다. (ops/README.md)
-# 차단은 exit 2 + stderr (Claude Code는 exit 2만 차단으로 처리한다).
+# 차단은 exit 2 + stderr (Claude Code·Codex 모두 exit 2를 차단으로 처리한다).
 
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')

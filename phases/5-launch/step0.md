@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/UI_GUIDE.md` (**AI 슬롭 안티패턴**, 레이아웃, 타이포그래피, 문구) — 이 step의 최우선 기준
 - `/docs/PRD.md` (포지셔닝 문구, 핵심 기능) · `/docs/USER_FLOWS.md` (① 첫 방문)
 - `/src/app/layout.tsx`, `/src/app/page.tsx` (임시 홈 — 이 step에서 없앤다), `/src/app/globals.css` (색 토큰)

@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`, `/AGENTS.md`
+- `/AGENTS.md`
 - `/docs/USER_FLOWS.md` (① 빈 상태, ② 업로드 전체, 예외·오류의 "파일"·"기기·네트워크")
 - `/docs/UI_GUIDE.md` (버튼·입력·카드·문구·애니메이션 규칙, AI 슬롭 금지 목록)
 - `/docs/ARCHITECTURE.md` (레이어 규칙: 컴포넌트는 props만, 쓰기는 `apiFetch`로 `/api/*`만; API 표의 `/api/uploads*`)
@@ -90,7 +90,7 @@ npm run test
 
 - 브라우저에서 Supabase SDK를 import하거나 Storage에 직접 목록·삭제 요청을 하지 마라. 이유: 브라우저 client 없음 원칙(ADR-002). 브라우저는 서버가 준 signed URL로 PUT만 한다.
 - 여러 파일을 `Promise.all`로 동시에 처리하지 마라. 이유: 동기 처리 설계상 한 번에 하나씩 보내야 상한·중복 판단이 꼬이지 않는다(ADR-003).
-- 파일 내용·가맹점·금액을 `console`·Vercel Analytics 이벤트에 남기지 마라. 이유: CLAUDE.md CRITICAL(로그 비노출).
+- 파일 내용·가맹점·금액을 `console`·Vercel Analytics 이벤트에 남기지 마라. 이유: AGENTS.md CRITICAL(로그 비노출).
 - 서버 에러 문구를 그대로 보여 주지 마라. 이유: 내부 정보 노출. `ERROR_MESSAGES`의 정해진 한국어 문구만 쓴다.
 - `page.tsx`에서 fetch·가공·분기 로직을 늘리지 마라. 이유: async RSC는 Vitest로 테스트할 수 없다. 로직은 컴포넌트·queries에 두고 테스트한다.
 - 기존 테스트를 깨뜨리지 마라.

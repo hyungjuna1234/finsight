@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/ARCHITECTURE.md` (API 표의 `PATCH /api/transactions/:id`, `transactions`·`category_overrides` 테이블)
 - `/docs/ADR.md` (ADR-005: 사용자 지정 분류가 다음 업로드에 반영됨)
 - `/docs/USER_FLOWS.md` (③ 카테고리 수정 [이번 건만][같은 가맹점 모두], 거래 해석), `/docs/UI_GUIDE.md`
@@ -98,6 +98,6 @@ npm run test
 - `setCategory`에서 admin client를 쓰거나 `user_id` 조건을 빼지 마라. 이유: RLS + 명시 조건의 이중 격리가 원칙이고, admin은 `server/admin.ts` 전용이다.
 - Server Action(`"use server"`)으로 카테고리를 바꾸지 마라. 이유: 쓰기는 Route Handler + `handler()`만(ADR-001).
 - 요청 body의 `userId`를 믿지 마라. 이유: 사용자 ID는 세션(`ctx.user.id`)에서만 온다.
-- 로그에 가맹점명·금액·검색어를 남기지 마라. 이유: SafeLogger 규칙(CLAUDE.md CRITICAL).
+- 로그에 가맹점명·금액·검색어를 남기지 마라. 이유: SafeLogger 규칙(AGENTS.md CRITICAL).
 - `category_source`를 `'user'` 외의 값으로 바꾸지 마라. 이유: 사용자 수정 여부가 H4 지표와 이후 분류 우선순위의 근거다.
 - 기존 테스트를 깨뜨리지 마라.

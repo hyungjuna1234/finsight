@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/ARCHITECTURE.md` (도메인 타입, 에러 코드 표, 디렉토리)
 - `/docs/ADR.md`
 - `/docs/UI_GUIDE.md` (금액·차트 표기 규칙)
@@ -85,7 +85,7 @@ npm run test    # 모든 테스트 통과
 2. 아키텍처 체크리스트를 확인한다:
    - `src/lib/**`가 next·react·supabase·server·services를 import하지 않는가?
    - 테스트가 대상과 같은 폴더에 `X.test.ts`로 있는가?
-   - CLAUDE.md CRITICAL 규칙을 위반하지 않았는가?
+   - AGENTS.md CRITICAL 규칙을 위반하지 않았는가?
 3. 결과에 따라 `phases/0-foundation/index.json`의 해당 step을 업데이트한다:
    - 성공 → `"status": "completed"`, `"summary": "산출물 한 줄 요약"` (만든 모듈과 주요 export 이름을 적는다)
    - 수정 3회 시도 후에도 실패 → `"status": "error"`, `"error_message": "구체적 에러 내용"`

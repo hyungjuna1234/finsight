@@ -1,6 +1,6 @@
 #!/bin/bash
-# Stop Verify Hook — Stop
-# 세션이 끝나기 전에 lint → build → test를 돌리고, 실패하면 exit 2로 Claude에게 되돌려 고치게 한다.
+# Stop Verify Hook — Stop (Claude Code·Codex 공용)
+# 세션이 끝나기 전에 lint → build → test를 돌리고, 실패하면 exit 2로 에이전트에게 되돌려 고치게 한다.
 # - package.json이 없으면(스캐폴딩 전) 통과
 # - stop_hook_active가 true면(이미 한 번 되돌린 뒤) 무한 루프를 막기 위해 통과
 

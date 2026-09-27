@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`, `/AGENTS.md`
+- `/AGENTS.md`
 - `/docs/ARCHITECTURE.md` (레이어 규칙, queries 규칙, `transactions` 테이블)
 - `/docs/USER_FLOWS.md` (① 거래 없음 → `/upload`, ③ 대시보드), `/docs/UI_GUIDE.md` (타일·차트·레이아웃·색)
 - `/src/lib/analytics/month.ts`, `/src/lib/domain/month.ts`, `/src/lib/domain/money.ts` (Step 0 — `summarizeMonth`, `collapseCategories`, `formatMonthLabel`, `formatSignedKRW`)
@@ -88,7 +88,7 @@ npm run test
 
 ## 금지사항
 
-- 페이지·컴포넌트에서 Supabase를 직접 부르거나 브라우저 Supabase client를 만들지 마라. 이유: 읽기는 RSC → `server/queries`만(CLAUDE.md CRITICAL, ADR-002).
+- 페이지·컴포넌트에서 Supabase를 직접 부르거나 브라우저 Supabase client를 만들지 마라. 이유: 읽기는 RSC → `server/queries`만(AGENTS.md CRITICAL, ADR-002).
 - 월 선택을 클라이언트 state + fetch로 만들지 마라. 이유: `?month=` 링크 + RSC면 GET 부작용 없이 충분하고 `/demo`에서도 그대로 동작한다.
 - `select('*')`로 거래를 읽지 마라. 이유: 필요 없는 컬럼(identity_key 등)까지 직렬화되어 클라이언트로 갈 수 있다.
 - Pro 판단(`requirePro`, 전월 비교, 정기결제 목록)을 이 step에 넣지 마라. 이유: 3-pro의 범위다. 슬롯만 남긴다.

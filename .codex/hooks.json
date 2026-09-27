@@ -1,0 +1,49 @@
+{
+  "description": "FinSight harness guards. Claude Code uses the same scripts via .claude/settings.json.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/scripts/hooks/bash-guard.sh\"",
+            "statusMessage": "bash-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "^(Bash|apply_patch)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/scripts/hooks/env-guard.sh\"",
+            "statusMessage": "env-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "^apply_patch$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/scripts/hooks/tdd-guard.sh\"",
+            "statusMessage": "tdd-guard"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/scripts/hooks/stop-verify.sh\"",
+            "timeout": 600,
+            "statusMessage": "lint · build · test"
+          }
+        ]
+      }
+    ]
+  }
+}

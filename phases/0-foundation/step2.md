@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`, `/AGENTS.md`
+- `/AGENTS.md`
 - `/docs/ARCHITECTURE.md` (레이어 규칙, `server/admin.ts`, 외부 SDK 메모의 Supabase SSR·Next 16 항목)
 - `/docs/ADR.md` (ADR-002)
 - `/src/server/env.ts`, `/src/lib/domain/errors.ts`, `/src/lib/domain/redirect.ts` (Step 0)

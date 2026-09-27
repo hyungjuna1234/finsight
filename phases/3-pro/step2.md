@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md` (CRITICAL: Claude에는 집계값만, 호출 전 동의·일일 상한, 호출 후 `ai_usage`, 투자·세무 조언 거절)
+- `/AGENTS.md` (CRITICAL: Claude에는 집계값만, 호출 전 동의·일일 상한, 호출 후 `ai_usage`, 투자·세무 조언 거절)
 - `/docs/ARCHITECTURE.md` (`claude.writeInsight`, API 표의 `POST /api/insights`, Anthropic SDK 메모, `insights` 테이블)
 - `/docs/ADR.md` (ADR-007: 숫자는 서버 집계, AI는 문장만), `/docs/UI_GUIDE.md` (AI 결과 아래 고지 한 줄)
 - `/src/services/claude/client.ts`, `/src/services/claude/models.ts` (`MODELS`), `/src/services/claude/mapper.ts`, `/src/services/claude/classifier.ts` (1-ingest: `messages.parse` 사용법, 에러 처리, usage 반환 형태를 **그대로** 따른다)
@@ -101,7 +101,7 @@ npm run test
 
 - 무료 크레딧을 Claude 호출 전에 차감하지 마라. 이유: 실패하면 사용자가 무료 1회를 잃는다. 성공 후에만 `markFreeInsightUsed`.
 - AI가 쓴 숫자를 화면에 보여주거나 숫자 검사를 건너뛰지 마라. 이유: 숫자 환각 방지를 위해 숫자는 서버 집계로만 표시한다(ADR-007).
-- 프롬프트·metrics·AI 응답을 로그에 남기지 마라. 이유: 지출 정보가 로그로 샌다(CLAUDE.md CRITICAL).
+- 프롬프트·metrics·AI 응답을 로그에 남기지 마라. 이유: 지출 정보가 로그로 샌다(AGENTS.md CRITICAL).
 - assistant prefill이나 Haiku용 파라미터를 섞지 마라. 이유: 구조화 출력과 충돌한다(ARCHITECTURE SDK 메모).
 - 피드백 이벤트에 금액·가맹점·이메일을 넣지 마라. 이유: 분석 이벤트에는 개인 지출 정보를 넣지 않는다(PRD 측정 원칙).
 - 기존 테스트를 깨뜨리지 마라.

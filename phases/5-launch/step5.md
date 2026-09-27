@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md` (`npm run e2e`, 테스트 규칙)
+- `/AGENTS.md` (`npm run e2e`, 테스트 규칙)
 - `/docs/ADR.md` (ADR-010: async 페이지는 e2e로 검증) · `/docs/USER_FLOWS.md` (화면 목록)
 - `/package.json` (`"e2e": "playwright test"`, `@playwright/test` 1.63) · `/vitest.config.mts` (vitest는 `src/**`·`supabase/**`만 수집)
 - `/src/server/auth.ts`와 테스트 (`getOptionalUser`, `requireUser`)

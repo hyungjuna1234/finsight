@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md` (CRITICAL: 채팅 도구 30행 이하, 투자·세무 조언 거절, Pro는 서버에서만, 호출 전 동의·상한)
+- `/AGENTS.md` (CRITICAL: 채팅 도구 30행 이하, 투자·세무 조언 거절, Pro는 서버에서만, 호출 전 동의·상한)
 - `/docs/ARCHITECTURE.md` (`claude.chat`, 채팅 도구 2개, API 표의 `POST /api/chat`, Anthropic SDK 메모)
 - `/docs/ADR.md` (ADR-007: 비스트리밍, 읽기 전용 도구 2개, 기록 저장 안 함), `/docs/USER_FLOWS.md` (AI 예외: 채팅)
 - `/src/services/claude/client.ts`, `/src/services/claude/models.ts`, `/src/services/claude/insight.ts` (Step 2 — 에러 처리·usage 형태를 맞춘다)
@@ -89,6 +89,6 @@ npm run test
 - 도구에 쓰기 기능(카테고리 변경 등)이나 세 번째 도구를 추가하지 마라. 이유: MVP는 읽기 전용 도구 2개로 범위를 정했다(ADR-007).
 - 도구 안에서 admin client를 쓰지 마라. 이유: RLS가 마지막 방어선이다. 모델이 조작된 입력을 보내도 본인 행만 읽혀야 한다.
 - 스트리밍(SSE)이나 채팅 기록 테이블을 만들지 마라. 이유: MVP는 비스트리밍 JSON, 기록은 브라우저 세션에만 둔다.
-- 프롬프트·질문·도구 결과·응답을 로그에 남기지 마라. 이유: 지출 정보 유출(CLAUDE.md CRITICAL).
+- 프롬프트·질문·도구 결과·응답을 로그에 남기지 마라. 이유: 지출 정보 유출(AGENTS.md CRITICAL).
 - 도구 입력을 `.or()` 필터 문자열에 끼워 넣지 마라. 이유: PostgREST 필터 주입으로 조건을 우회할 수 있다.
 - 기존 테스트를 깨뜨리지 마라.

@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/ARCHITECTURE.md` (`sniffFile`·`decodeFile` 시그니처, 파일 제한, 인코딩, 외부 SDK 메모의 SheetJS·iconv-lite)
 - `/docs/ADR.md` (ADR-003)
 - `/src/lib/domain/result.ts`, `/src/lib/domain/errors.ts` (0-foundation)
@@ -90,5 +90,5 @@ npm run test
 - `sheetRows` 없이 `XLSX.read`를 부르지 마라. 이유: 거대 파일·압축 폭탄이 서버 메모리를 다 쓴다.
 - CSV·TSV를 SheetJS 기본 옵션으로 읽지 마라. 이유: 값 자동 변환으로 승인번호 앞자리 0과 날짜 형식이 바뀐다. 텍스트는 자체 파서로 읽는다.
 - 파일 확장자만 보고 형식을 정하지 마라. 이유: 카드사 xls의 상당수는 HTML·XML·텍스트다.
-- 새 npm 의존성(CSV 파서, chardet 등)을 추가하지 마라. 이유: CLAUDE.md 규칙. 필요한 것은 전부 설치되어 있다.
+- 새 npm 의존성(CSV 파서, chardet 등)을 추가하지 마라. 이유: AGENTS.md 규칙. 필요한 것은 전부 설치되어 있다.
 - 기존 테스트를 깨뜨리지 마라.

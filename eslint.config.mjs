@@ -2,7 +2,7 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
-// 레이어 규칙 (CLAUDE.md 규칙 1, docs/ARCHITECTURE.md)
+// 레이어 규칙 (AGENTS.md 규칙 1, docs/ARCHITECTURE.md)
 // - lib/**        : 순수 함수. next·react·supabase·server·services·components import 금지
 // - components/** : props만 받는다. supabase·server·services import 금지
 // - 그 외 src/**  : Supabase SDK는 services/supabase에서만, admin client는 server/admin.ts에서만

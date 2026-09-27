@@ -24,12 +24,12 @@ import execute as ex
 
 @pytest.fixture
 def tmp_project(tmp_path):
-    """phases/, CLAUDE.md, docs/ 를 갖춘 임시 프로젝트 구조."""
+    """phases/, AGENTS.md, docs/ 를 갖춘 임시 프로젝트 구조."""
     phases_dir = tmp_path / "phases"
     phases_dir.mkdir()
 
-    claude_md = tmp_path / "CLAUDE.md"
-    claude_md.write_text("# Rules\n- rule one\n- rule two")
+    agents_md = tmp_path / "AGENTS.md"
+    agents_md.write_text("# Rules\n- rule one\n- rule two")
 
     docs_dir = tmp_path / "docs"
     docs_dir.mkdir()
@@ -146,7 +146,7 @@ class TestJsonHelpers:
 # ---------------------------------------------------------------------------
 
 class TestLoadGuardrails:
-    def test_loads_claude_md_and_docs(self, executor, tmp_project):
+    def test_loads_agents_md_and_docs(self, executor, tmp_project):
         with patch.object(ex, "ROOT", tmp_project):
             result = executor._load_guardrails()
         assert "# Rules" in result
@@ -166,11 +166,22 @@ class TestLoadGuardrails:
         guide_pos = result.index("guide")
         assert arch_pos < guide_pos
 
-    def test_no_claude_md(self, executor, tmp_project):
-        (tmp_project / "CLAUDE.md").unlink()
+    def test_labels_agents_md_section(self, executor, tmp_project):
         with patch.object(ex, "ROOT", tmp_project):
             result = executor._load_guardrails()
-        assert "CLAUDE.md" not in result
+        assert "(AGENTS.md)" in result
+
+    def test_ignores_claude_md(self, executor, tmp_project):
+        (tmp_project / "CLAUDE.md").write_text("@AGENTS.md\nCLAUDE_ONLY")
+        with patch.object(ex, "ROOT", tmp_project):
+            result = executor._load_guardrails()
+        assert "CLAUDE_ONLY" not in result
+
+    def test_no_agents_md(self, executor, tmp_project):
+        (tmp_project / "AGENTS.md").unlink()
+        with patch.object(ex, "ROOT", tmp_project):
+            result = executor._load_guardrails()
+        assert "AGENTS.md" not in result
         assert "Architecture" in result
 
     def test_no_docs_dir(self, executor, tmp_project):
@@ -248,6 +259,12 @@ class TestBuildPreamble:
     def test_includes_commit_example(self, executor):
         result = executor._build_preamble("", "")
         assert "feat(mvp):" in result
+
+    def test_tells_agent_not_to_commit(self, executor):
+        # Codex 샌드박스에서 .git은 읽기 전용이다. 커밋은 _commit_step이 한다.
+        result = executor._build_preamble("", "")
+        assert "직접 커밋하지 마라" in result
+        assert "모든 변경사항을 커밋하라" not in result
 
     def test_includes_rules(self, executor):
         result = executor._build_preamble("", "")
@@ -420,32 +437,61 @@ class TestCommitStep:
 
 
 # ---------------------------------------------------------------------------
-# _invoke_claude (mocked)
+# _invoke_codex (mocked)
 # ---------------------------------------------------------------------------
 
-class TestInvokeClaude:
-    def test_invokes_claude_with_correct_args(self, executor):
-        mock_result = MagicMock(returncode=0, stdout='{"result": "ok"}', stderr="")
+class TestInvokeCodex:
+    def test_invokes_codex_exec_in_workspace_sandbox(self, executor):
+        mock_result = MagicMock(returncode=0, stdout='{"type": "turn.completed"}', stderr="")
         step = {"step": 2, "name": "ui"}
-        preamble = "PREAMBLE\n"
 
         with patch("subprocess.run", return_value=mock_result) as mock_run:
-            output = executor._invoke_claude(step, preamble)
+            executor._invoke_codex(step, "PREAMBLE\n")
 
         cmd = mock_run.call_args[0][0]
-        assert cmd[0] == "claude"
-        assert "-p" in cmd
-        assert "--dangerously-skip-permissions" in cmd
-        assert "--output-format" in cmd
-        assert "PREAMBLE" in cmd[-1]
-        assert "UI를 구현하세요" in cmd[-1]
+        assert cmd[:2] == ["codex", "exec"]
+        assert cmd[cmd.index("--sandbox") + 1] == "workspace-write"
+        assert "--json" in cmd
+        assert cmd[-1] == "-"
+
+    def test_does_not_bypass_sandbox_or_hook_trust(self, executor):
+        mock_result = MagicMock(returncode=0, stdout="", stderr="")
+        step = {"step": 2, "name": "ui"}
+
+        with patch("subprocess.run", return_value=mock_result) as mock_run:
+            executor._invoke_codex(step, "preamble")
+
+        cmd = mock_run.call_args[0][0]
+        assert not any("dangerously" in arg for arg in cmd)
+        assert "--yolo" not in cmd
+
+    def test_passes_prompt_via_stdin(self, executor):
+        mock_result = MagicMock(returncode=0, stdout="", stderr="")
+        step = {"step": 2, "name": "ui"}
+
+        with patch("subprocess.run", return_value=mock_result) as mock_run:
+            executor._invoke_codex(step, "PREAMBLE\n")
+
+        prompt = mock_run.call_args[1]["input"]
+        assert prompt.startswith("PREAMBLE")
+        assert "UI를 구현하세요" in prompt
+        assert "UI를 구현하세요" not in " ".join(mock_run.call_args[0][0])
+
+    def test_runs_in_project_root(self, executor, tmp_project):
+        mock_result = MagicMock(returncode=0, stdout="", stderr="")
+        step = {"step": 2, "name": "ui"}
+
+        with patch("subprocess.run", return_value=mock_result) as mock_run:
+            executor._invoke_codex(step, "preamble")
+
+        assert mock_run.call_args[1]["cwd"] == str(tmp_project)
 
     def test_saves_output_json(self, executor):
         mock_result = MagicMock(returncode=0, stdout='{"ok": true}', stderr="")
         step = {"step": 2, "name": "ui"}
 
         with patch("subprocess.run", return_value=mock_result):
-            executor._invoke_claude(step, "preamble")
+            executor._invoke_codex(step, "preamble")
 
         output_file = executor._phase_dir / "step2-output.json"
         assert output_file.exists()
@@ -457,7 +503,7 @@ class TestInvokeClaude:
     def test_nonexistent_step_file_exits(self, executor):
         step = {"step": 99, "name": "nonexistent"}
         with pytest.raises(SystemExit) as exc_info:
-            executor._invoke_claude(step, "preamble")
+            executor._invoke_codex(step, "preamble")
         assert exc_info.value.code == 1
 
     def test_timeout_is_1800(self, executor):
@@ -465,7 +511,7 @@ class TestInvokeClaude:
         step = {"step": 2, "name": "ui"}
 
         with patch("subprocess.run", return_value=mock_result) as mock_run:
-            executor._invoke_claude(step, "preamble")
+            executor._invoke_codex(step, "preamble")
 
         assert mock_run.call_args[1]["timeout"] == 1800
 

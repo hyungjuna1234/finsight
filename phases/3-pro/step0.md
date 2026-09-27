@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md` (CRITICAL: Pro 기능은 서버의 `requirePro()`로만)
+- `/AGENTS.md` (CRITICAL: Pro 기능은 서버의 `requirePro()`로만)
 - `/docs/ARCHITECTURE.md` (Pro 권한 절, `server/admin.ts` 함수 목록, `entitlements` 테이블, 에러 코드 402)
 - `/docs/ADR.md` (ADR-008 `period_end + 7일`, ADR-009 요금제)
 - `/docs/USER_FLOWS.md` (④ 구독 상태 전이, 결제 예외의 "웹훅 유실 → 기간 확인")
@@ -83,7 +83,7 @@ npm run test
 
 ## 금지사항
 
-- 클라이언트·쿠키·쿼리스트링 값으로 Pro 여부를 판단하지 마라. 이유: 위조 가능하다. 서버의 `getPlan`/`requirePro`만 믿는다(CLAUDE.md CRITICAL).
+- 클라이언트·쿠키·쿼리스트링 값으로 Pro 여부를 판단하지 마라. 이유: 위조 가능하다. 서버의 `getPlan`/`requirePro`만 믿는다(AGENTS.md CRITICAL).
 - `markFreeInsightUsed`를 무조건 update로 만들지 마라. 이유: 조건(`free_insight_used_at IS NULL`)이 없으면 동시 요청이 크레딧을 여러 번 쓸 수 있다.
 - Polar SDK나 `services/billing`을 import하지 마라. 이유: 결제 연동은 Polar 승인 후 4-billing에서 한다.
 - `proxy.ts`나 `(app)/layout.tsx`에서 Pro를 확인하지 마라. 이유: Free도 앱을 쓴다. Pro 판단은 해당 query·action에서만 한다.

@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/USER_FLOWS.md` (① 동의 단계, 인증 예외)
 - `/docs/ARCHITECTURE.md` (`consents` 테이블, API 표의 `/api/consents`)
 - `/docs/UI_GUIDE.md`

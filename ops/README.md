@@ -1,6 +1,6 @@
 # 운영 작업 가이드 (사람 전용)
 
-이 레포(`finsight/`)는 **harness 전용 작업 복사본**이다. harness는 `claude -p --dangerously-skip-permissions`로 돌고 `git add -A`로 커밋하므로, 이 폴더에는 운영 자격증명과 실데이터를 두지 않는다.
+이 레포(`finsight/`)는 **harness 전용 작업 복사본**이다. harness는 `codex exec --sandbox workspace-write`로 무인 실행되고 `git add -A`로 커밋하므로, 이 폴더에는 운영 자격증명과 실데이터를 두지 않는다.
 
 ## 폴더 구성
 | 위치 | 용도 | 들어가는 것 |

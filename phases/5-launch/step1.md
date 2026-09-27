@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/UI_GUIDE.md` (문구, 레이아웃, AI 슬롭 안티패턴) · `/docs/USER_FLOWS.md` (② 업로드, 파일 예외)
 - `/docs/PRD.md` (페르소나 지민: "모바일에서 파일을 못 받음") · `/plan.md` 1-1장(가이드는 한 페이지), 10장(사람이 가이드 문구 확인)
 - `/src/lib/domain/errors.ts` (`ERROR_CODES`, `ERROR_MESSAGES`)

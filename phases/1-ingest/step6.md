@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`, `/AGENTS.md`
+- `/AGENTS.md`
 - `/docs/ARCHITECTURE.md` ("업로드 처리", `server/admin.ts` 목록, API 표의 `/api/uploads*`, DB의 `uploads`·`transactions`·`header_mappings`·`ai_usage`, 일일 상한)
 - `/docs/ADR.md` (ADR-001, ADR-003, ADR-004, ADR-006, ADR-009)
 - `/src/server/handler.ts`(`handler`, `consent` 옵션), `/src/server/auth.ts`, `/src/server/logger.ts`, `/src/server/env.ts` (0-foundation)
@@ -123,6 +123,6 @@ npm run test
 - signed URL을 `upsert: true`로 만들지 마라. 이유: 기존 원본을 덮어써 sha256 검증과 중복 방지가 무력화된다.
 - upsert에서 기존 행의 `category`·`category_source`를 새 값으로 덮어쓰지 마라. 이유: 사용자가 고친 분류가 재업로드 때 사라진다.
 - 업로드 처리를 `after()`·백그라운드 큐·cron으로 넘기지 마라. 이유: ADR-003 — 한 요청 안에서 동기로 끝낸다.
-- DB·SDK 에러 원문, 파일 내용, 프롬프트를 로그·응답에 넣지 마라. 이유: CLAUDE.md CRITICAL(SafeLogger는 코드·ID·개수만).
+- DB·SDK 에러 원문, 파일 내용, 프롬프트를 로그·응답에 넣지 마라. 이유: AGENTS.md CRITICAL(SafeLogger는 코드·ID·개수만).
 - Server Action을 만들지 마라. 이유: 쓰기는 Route Handler + `handler()`만(ADR-001).
 - 기존 테스트를 깨뜨리지 마라.

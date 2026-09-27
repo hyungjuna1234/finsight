@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/ARCHITECTURE.md` (핵심 순수 함수 시그니처, 도메인 타입)
 - `/docs/USER_FLOWS.md` (거래 해석: 취소·환불·할부·해외 추정 금액)
 - `/docs/ADR.md` (ADR-009)
@@ -91,7 +91,7 @@ npm run test
 2. 아키텍처 체크리스트를 확인한다:
    - `src/lib/analytics/**`가 next·react·supabase·server·services를 import하지 않는가?
    - 금액 합계가 모두 정수이고, 음수 가능 값(`net`, `diff`)을 `KRW` 타입으로 속이지 않았는가?
-   - CLAUDE.md CRITICAL 규칙을 위반하지 않았는가?
+   - AGENTS.md CRITICAL 규칙을 위반하지 않았는가?
 3. 결과에 따라 `phases/2-dashboard/index.json`의 해당 step을 업데이트한다:
    - 성공 → `"status": "completed"`, `"summary": "산출물 한 줄 요약"` (파일과 주요 export 이름 포함)
    - 수정 3회 시도 후에도 실패 → `"status": "error"`, `"error_message": "구체적 에러 내용"`

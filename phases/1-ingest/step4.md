@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/ARCHITECTURE.md` (`parseRows`·`identityKey`·`normalizeMerchant` 시그니처, 마스킹 규칙, `transactions` 테이블)
 - `/docs/USER_FLOWS.md` ("거래 해석": 취소·환불·할부·해외 추정)
 - `/docs/ADR.md` (ADR-006)

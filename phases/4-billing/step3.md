@@ -6,7 +6,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/USER_FLOWS.md` (④ 탈퇴, 결제 예외) · `/docs/UI_GUIDE.md`
 - `/docs/ARCHITECTURE.md` (`server/admin.ts` 함수 목록, API 표의 `/api/account/delete`, DB의 cascade 규칙)
 - `/plan.md` 7-3장(결제 예외), 1-1장(동의 철회 = 탈퇴)

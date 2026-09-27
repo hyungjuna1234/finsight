@@ -9,7 +9,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/ARCHITECTURE.md` (Pro 권한, 외부 서비스 래퍼, 에러 코드 표, 외부 SDK 메모의 Polar 항목)
 - `/docs/ADR.md` (ADR-008)
 - `/plan.md` 3-4장(권한 동기화), 11장(리스크) · `/ops/polar-approval-request.md`
@@ -108,6 +108,6 @@ npm run test
 - `@polar-sh/sdk`를 `src/services/billing/` 밖에서 import하지 마라. 이유: 업체를 바꿀 때 고칠 범위를 이 폴더로 가둔다.
 - 요청 body에서 받은 값을 `external_customer_id`로 쓰지 마라. 이유: 남의 계정에 결제와 권한이 붙는다.
 - success URL의 `{CHECKOUT_ID}`를 `URL`·`encodeURIComponent`로 인코딩하지 마라. 이유: `%7B…%7D`가 되면 Polar가 checkout ID로 바꾸지 않는다.
-- 웹훅 payload, 이메일, IP, SDK 에러 메시지를 로그나 응답에 넣지 마라. 이유: CLAUDE.md CRITICAL(로그 비노출).
+- 웹훅 payload, 이메일, IP, SDK 에러 메시지를 로그나 응답에 넣지 마라. 이유: AGENTS.md CRITICAL(로그 비노출).
 - 테스트에서 실제 네트워크를 쓰거나 `.env*` 파일을 만들지 마라. 이유: 이 복사본에는 키가 없고, 테스트는 mock으로만 돈다.
 - 기존 테스트를 깨뜨리지 마라.

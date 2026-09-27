@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md` (CRITICAL: Claude에는 마스킹한 헤더+샘플 5행만)
+- `/AGENTS.md` (CRITICAL: Claude에는 마스킹한 헤더+샘플 5행만)
 - `/docs/ARCHITECTURE.md` (`detectTable`·`maskSamples`·`headerSignature`·`validateMapping` 시그니처, 마스킹 규칙)
 - `/docs/ADR.md` (ADR-003, ADR-004)
 - `/src/lib/domain/result.ts`, `/src/lib/domain/types.ts`(`IsoDate`), `/src/lib/domain/month.ts`(`isIsoDate`) (0-foundation)

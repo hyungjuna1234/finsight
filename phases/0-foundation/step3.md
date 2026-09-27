@@ -4,7 +4,7 @@
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
-- `/CLAUDE.md`
+- `/AGENTS.md`
 - `/docs/ARCHITECTURE.md` (API 표, 에러 코드 표, `handler()` 설명)
 - `/docs/ADR.md` (ADR-001)
 - `/src/lib/domain/errors.ts`, `/src/server/env.ts` (Step 0)
@@ -83,7 +83,7 @@ npm run test
 
 ## 금지사항
 
-- 로그에 `error.message`, `details`, 요청 body, 쿠키, 헤더 값을 남기지 마라. 이유: 거래 데이터·토큰이 로그로 샌다(CLAUDE.md CRITICAL).
+- 로그에 `error.message`, `details`, 요청 body, 쿠키, 헤더 값을 남기지 마라. 이유: 거래 데이터·토큰이 로그로 샌다(AGENTS.md CRITICAL).
 - cron 비밀을 `===`로 비교하지 마라. 이유: 타이밍 공격. `crypto.timingSafeEqual`을 쓴다.
 - 커널에 비즈니스 로직(업로드·결제 등)을 넣지 마라. 이유: 커널은 공통 관문만 담당한다.
 - Server Action을 만들지 마라. 이유: 쓰기는 Route Handler만(ADR-001).
