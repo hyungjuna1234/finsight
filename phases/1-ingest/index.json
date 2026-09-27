@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "table-detect",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T13:38:11+0900",
+      "summary": "어휘 점수 기반 detectTable, 개인정보 maskSamples, 결정적 셀 파서, SHA-256 헤더 서명과 95% 매핑 검증을 구현",
+      "completed_at": "2026-09-27T13:43:24+0900"
     },
     {
       "step": 3,
