@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "billing-ui",
-      "status": "pending"
+      "status": "completed",
+      "summary": "checkout·portal·confirm 라우트와 billing UI 컴포넌트, 공유 pricing.ts 및 요금·성공·설정 구독 화면 구현",
+      "started_at": "2026-09-27T18:38:07+0900",
+      "completed_at": "2026-09-27T18:46:23+0900"
     },
     {
       "step": 3,
