@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "legal-pages",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T22:38:29+0900",
+      "summary": "개인정보 처리방침·이용약관·환불 정책 초안과 공통 법률 문서 UI·사업자 고지를 추가함; 법률 검토·TODO 입력은 사람 몫",
+      "completed_at": "2026-09-27T22:43:02+0900"
     },
     {
       "step": 3,
