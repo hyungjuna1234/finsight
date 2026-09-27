@@ -37,7 +37,10 @@
     {
       "step": 4,
       "name": "demo",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T17:48:23+0900",
+      "summary": "결정적 합성 거래로 공개 /demo에서 실제 DashboardView를 재사용하고, 3-pro에서 교체할 정기결제·추이·인사이트 정적 DemoProPreview를 구현",
+      "completed_at": "2026-09-27T17:52:28+0900"
     }
   ],
   "created_at": "2026-09-27T14:23:33+0900"
