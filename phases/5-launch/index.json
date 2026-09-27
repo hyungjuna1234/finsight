@@ -5,10 +5,10 @@
     {
       "step": 0,
       "name": "landing",
-      "status": "error",
+      "status": "completed",
       "started_at": "2026-09-27T18:51:04+0900",
-      "error_message": "[3회 시도 후 실패] Step did not update status",
-      "failed_at": "2026-09-27T18:51:53+0900"
+      "summary": "정적 랜딩 페이지와 공통 마케팅 헤더·푸터, 가격·FAQ 섹션 및 Vercel Analytics를 추가함",
+      "completed_at": "2026-09-27T22:34:18+0900"
     },
     {
       "step": 1,
