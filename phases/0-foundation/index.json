@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "db-schema",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T12:58:51+0900",
+      "summary": "20260926000000_init.sql에 9개 테이블·RLS·최소 권한·비공개 Storage 버킷을 정의하고 supabase/tests/db.ts 기반 PGlite 격리 테스트와 수동 Database 타입을 추가했다.",
+      "completed_at": "2026-09-27T13:04:18+0900"
     },
     {
       "step": 2,
