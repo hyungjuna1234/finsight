@@ -45,7 +45,10 @@
     {
       "step": 5,
       "name": "categorizer",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T13:56:31+0900",
+      "summary": "CATEGORY_RULES·categorizeByRule, 인덱스 기반 Claude classify, 사용자별 override→history→rule→AI 배치 분류 categorizeTransactions를 구현",
+      "completed_at": "2026-09-27T14:01:39+0900"
     },
     {
       "step": 6,
