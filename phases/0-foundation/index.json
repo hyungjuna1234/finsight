@@ -45,7 +45,10 @@
     {
       "step": 5,
       "name": "consent-gate",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T13:18:23+0900",
+      "summary": "필수 동의 4종의 버전 판정·개별 저장·API 강제 게이트와 온보딩 동의 화면을 TDD로 구현했다.",
+      "completed_at": "2026-09-27T13:24:28+0900"
     }
   ],
   "created_at": "2026-09-27T12:53:47+0900"
