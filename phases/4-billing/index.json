@@ -2,9 +2,29 @@
   "project": "FinSight",
   "phase": "4-billing",
   "steps": [
-    { "step": 0, "name": "polar-service", "status": "pending" },
-    { "step": 1, "name": "entitlement-sync", "status": "pending" },
-    { "step": 2, "name": "billing-ui", "status": "pending" },
-    { "step": 3, "name": "account-deletion", "status": "pending" }
-  ]
+    {
+      "step": 0,
+      "name": "polar-service",
+      "status": "completed",
+      "summary": "createCheckout/getCheckout/createPortalSession/getCustomerState/revokeSubscriptions/validateWebhook 구현 및 createPolar·checkouts·customerSessions·customers·subscriptions·webhooks SDK 메서드 검증",
+      "started_at": "2026-09-27T18:27:28+0900",
+      "completed_at": "2026-09-27T18:32:16+0900"
+    },
+    {
+      "step": 1,
+      "name": "entitlement-sync",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "billing-ui",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "account-deletion",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-09-27T18:27:28+0900"
 }
