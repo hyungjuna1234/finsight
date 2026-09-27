@@ -12,7 +12,8 @@
     },
     {
       "dir": "2-dashboard",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-09-27T17:52:28+0900"
     },
     {
       "dir": "3-pro",
