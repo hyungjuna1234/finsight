@@ -37,7 +37,10 @@
     {
       "step": 4,
       "name": "chat-ui",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T18:20:49+0900",
+      "summary": "Pro 전용 세션 채팅 UI와 링크·이미지·원시 HTML을 차단하는 안전한 마크다운 렌더러를 구현",
+      "completed_at": "2026-09-27T18:26:40+0900"
     }
   ],
   "created_at": "2026-09-27T17:53:02+0900"
