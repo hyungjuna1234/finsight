@@ -1,0 +1,3 @@
+import { render, screen } from "@testing-library/react"; import userEvent from "@testing-library/user-event"; import { describe, expect, it, vi } from "vitest";
+const { track } = vi.hoisted(() => ({ track: vi.fn() })); vi.mock("@vercel/analytics", () => ({ track })); import { InsightFeedback } from "./insight-feedback";
+describe("InsightFeedback", () => { it("tracks one non-sensitive vote", async () => { render(<InsightFeedback />); await userEvent.click(screen.getByRole("button", { name: "도움이 됐어요" })); expect(track).toHaveBeenCalledWith("insight_feedback", { value: "up" }); expect(screen.getByText("의견 고마워요")).toBeInTheDocument(); }); });

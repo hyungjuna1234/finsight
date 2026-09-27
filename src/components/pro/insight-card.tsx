@@ -1,0 +1,3 @@
+import type { InsightContent } from "@/lib/analytics/insight-metrics";
+import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
+export function InsightCard({ content }: { content: InsightContent }) { return <div className="rounded-md border border-line bg-surface p-5"><h3 className="text-base font-semibold text-ink">{content.headline}</h3><ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-body">{content.points.map((point) => <li key={point}>{point}</li>)}</ul>{content.tips.length ? <><h4 className="mt-4 text-sm font-medium text-ink">실천 팁</h4><ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-relaxed text-body">{content.tips.map((tip) => <li key={tip}>{tip}</li>)}</ul></> : null}<AiDisclaimer /></div>; }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { detectRecurring } from "@/lib/analytics/recurring";
 import { summarizeMonth } from "@/lib/analytics/month";
+import { InsightContentSchema } from "@/lib/analytics/insight-metrics";
 import { isCategory } from "@/lib/domain/categories";
 import { isIsoDate } from "@/lib/domain/month";
 import { normalizeMerchant } from "@/lib/ingest/merchant";
@@ -50,6 +51,7 @@ describe("demo fixtures", () => {
   });
 
   it("keeps the static insight free of digits", () => {
+    expect(InsightContentSchema.parse(DEMO_INSIGHT)).toEqual(DEMO_INSIGHT);
     expect([DEMO_INSIGHT.headline, ...DEMO_INSIGHT.points, ...DEMO_INSIGHT.tips].join(" ")).not.toMatch(/[0-9０-９]/);
   });
 });

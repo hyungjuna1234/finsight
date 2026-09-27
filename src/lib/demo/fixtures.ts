@@ -1,4 +1,5 @@
 import { buildDashboardModel, resolveMonth, type DashboardModel } from "@/lib/analytics/dashboard";
+import type { InsightContent } from "@/lib/analytics/insight-metrics";
 import { compareMonths, monthlyTrend, type MonthDelta, type TrendPoint } from "@/lib/analytics/compare";
 import { summarizeMonth } from "@/lib/analytics/month";
 import { detectRecurring, recurringSummary, type RecurringItem } from "@/lib/analytics/recurring";
@@ -14,11 +15,11 @@ export const DEMO_MONTHS: readonly [YearMonth, YearMonth, YearMonth] = [
   "2026-09" as YearMonth,
 ];
 
-export const DEMO_INSIGHT = {
+export const DEMO_INSIGHT: InsightContent = {
   headline: "외식 지출이 늘고 작은 간식 지출은 줄었어요",
   points: ["식사 관련 지출이 지난달보다 눈에 띄게 늘었어요.", "카페 방문은 줄어 생활비 흐름이 한결 단순해졌어요."],
   tips: ["배달과 외식을 함께 살펴보면 줄이기 쉬운 지출을 찾을 수 있어요.", "정기결제는 실제 사용 여부를 기준으로 가볍게 점검해 보세요."],
-} as const;
+};
 
 type MerchantPattern = { name: string; category: Category; min: number; range: number };
 

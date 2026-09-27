@@ -1,0 +1,2 @@
+import { render, screen } from "@testing-library/react"; import { describe, expect, it } from "vitest"; import { InsightCard } from "./insight-card";
+describe("InsightCard", () => { it("renders AI content as plain text", () => { const { container } = render(<InsightCard content={{ headline: "**x**", points: ["<b>bold</b>"], tips: ["[a](http://x)"] }} />); expect(screen.getByText("**x**")).toBeInTheDocument(); expect(screen.getByText("<b>bold</b>")).toBeInTheDocument(); expect(container.querySelector("a, b, strong")).toBeNull(); }); });
