@@ -2,6 +2,18 @@ import type { Plan } from "@/lib/domain/types";
 
 export const PRO_GRACE_DAYS = 7;
 
+export interface BillingSubscription {
+  id: string;
+  status: string;
+  productId: string;
+  currentPeriodEnd: Date | null;
+  cancelAtPeriodEnd: boolean;
+}
+
+export interface CustomerState {
+  subscriptions: BillingSubscription[];
+}
+
 export interface EntitlementLike {
   plan: Plan;
   periodEnd: Date | null;
