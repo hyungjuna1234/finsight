@@ -5,7 +5,7 @@ import { ApiError } from "@/components/ui/api-fetch";
 import { UploadError } from "./upload-error";
 
 describe("UploadError", () => {
-  it.each([["ENCRYPTED_FILE", "가이드", "/guide"], ["DUPLICATE_FILE", "보기", "/dashboard"]] as const)("%s 오류 링크를 표시한다", (code, label, href) => {
+  it.each([["ENCRYPTED_FILE", "가이드", "/guide#trouble-encrypted-file"], ["DUPLICATE_FILE", "보기", "/dashboard"]] as const)("%s 오류 링크를 표시한다", (code, label, href) => {
     render(<UploadError error={new ApiError(code, 422, "unsafe server detail")} />);
     expect(screen.getByRole("link", { name: label })).toHaveAttribute("href", href);
     expect(screen.queryByText("unsafe server detail")).not.toBeInTheDocument();
