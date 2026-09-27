@@ -2,6 +2,7 @@ import "server-only";
 
 import { AppError } from "@/lib/domain/errors";
 import type { Plan } from "@/lib/domain/types";
+import { logger } from "@/server/logger";
 import { createAdminSupabase } from "@/services/supabase/admin";
 
 const UUID_PATH = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\//i;
@@ -115,5 +116,48 @@ export const adminEntitlements = {
       .select("user_id");
     if (error) internal();
     return data?.length === 1;
+  },
+
+  async upsertIfNewer(
+    userId: string,
+    value: { plan: Plan; status: string; periodEnd: Date | null },
+    startedAt: Date,
+  ): Promise<"updated" | "stale" | "unknown_user"> {
+    const supabase = createAdminSupabase();
+    const iso = startedAt.toISOString();
+    const payload = {
+      plan: value.plan,
+      status: value.status,
+      period_end: value.periodEnd?.toISOString() ?? null,
+      synced_at: iso,
+    };
+    const update = async () => supabase
+      .from("entitlements")
+      .update(payload)
+      .eq("user_id", userId)
+      .or(`synced_at.is.null,synced_at.lt."${iso}"`)
+      .select("user_id");
+
+    const first = await update();
+    if (first.error) {
+      logger.error("admin.entitlements.update", first.error, { code: first.error.code ?? null });
+      internal();
+    }
+    if ((first.data?.length ?? 0) > 0) return "updated";
+
+    const { error: insertError } = await supabase.from("entitlements").insert({ user_id: userId, ...payload });
+    if (!insertError) return "updated";
+    if (insertError.code === "23503") return "unknown_user";
+    if (insertError.code !== "23505") {
+      logger.error("admin.entitlements.insert", insertError, { code: insertError.code ?? null });
+      internal();
+    }
+
+    const retry = await update();
+    if (retry.error) {
+      logger.error("admin.entitlements.retry", retry.error, { code: retry.error.code ?? null });
+      internal();
+    }
+    return (retry.data?.length ?? 0) > 0 ? "updated" : "stale";
   },
 };
