@@ -37,7 +37,10 @@
     {
       "step": 4,
       "name": "row-parser",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T13:51:10+0900",
+      "summary": "normalizeMerchant 접두사 정규화, parseRows 거래·상태·해외·개인정보 파싱, node:crypto SHA-256 기반 identityKey를 구현",
+      "completed_at": "2026-09-27T13:56:31+0900"
     },
     {
       "step": 5,
