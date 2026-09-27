@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "supabase-server",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T13:04:19+0900",
+      "summary": "httpOnly 쿠키 기반 Supabase 서버·admin 클라이언트, 보호 경로 판정, Next 16 proxy 세션 갱신, getUser 인증 헬퍼를 구현하고 테스트했다.",
+      "completed_at": "2026-09-27T13:09:07+0900"
     },
     {
       "step": 3,
