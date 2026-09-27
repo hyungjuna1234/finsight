@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "transactions",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T17:36:14+0900",
+      "summary": "거래 필터·날짜별 목록과 안전한 페이지 조회, 사용자 범위 카테고리 수정 API·override 반영, 분류 변경 UI를 TDD로 구현",
+      "completed_at": "2026-09-27T17:42:12+0900"
     },
     {
       "step": 3,
