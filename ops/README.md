@@ -38,5 +38,11 @@ brew install gitleaks
 - [ ] 0-foundation 이후: Supabase dev·prod(서울) 생성, `link` → `db push` → `gen types`, 카카오("Allow users without an email", 이메일 자동 연결 확인)·구글 OAuth, 운영자 MFA
 - [ ] 1-ingest 이후: Anthropic 키 + 월 지출 한도, 실제 파일 대조
 - [ ] 4-billing 전: Polar sandbox 상품(₩6,900 / $4.99), 공개 checkout 링크 끄기, 고객당 구독 1개, 유예 7일, 웹훅 secret
+- [ ] Vercel 프로젝트 연결(대시보드 또는 `finsight-ops/`)과 환경변수 등록. Preview는 Polar sandbox, Production은 production env로 분리
+- [ ] Vercel에 `CRON_SECRET` 등록. Hobby cron은 하루 1회이며 `0 18 * * *`(UTC 18시, KST 03:00) 시간대 안에서 실행이 밀릴 수 있음
+- [ ] Vercel 플랜에서 업로드 confirm·recategorize·insights의 120초 `maxDuration`을 허용하는지 확인
+- [ ] Polar 웹훅 URL을 `https://<도메인>/api/webhooks/polar`로 등록하고 `customer.state_changed`·`subscription.*`·`order.paid` 이벤트 선택
+- [ ] Supabase Auth Redirect URL에 `https://<도메인>/auth/callback` 등록
+- [ ] 배포 후 `curl -I https://<도메인>`로 CSP·HSTS 등 보안 헤더 확인
 - [ ] 5-launch 이후: 가이드 문구 확인, 업타임 모니터
 - [ ] 런칭 전: Polar KYC, Vercel Pro, preview/production env 분리, 도메인, 법률 검토
