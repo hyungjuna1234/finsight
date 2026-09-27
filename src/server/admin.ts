@@ -14,6 +14,23 @@ function safePath(path: string): void {
 function bucket() { return createAdminSupabase().storage.from("statements"); }
 function internal(): never { throw new AppError("INTERNAL"); }
 
+function authErrorStatus(error: unknown): number | null {
+  if (typeof error !== "object" || error === null) return null;
+  const candidate = error as { status?: unknown; statusCode?: unknown };
+  if (typeof candidate.status === "number") return candidate.status;
+  return typeof candidate.statusCode === "number" ? candidate.statusCode : null;
+}
+
+export const adminAuth = {
+  async deleteUser(userId: string): Promise<void> {
+    const { error } = await createAdminSupabase().auth.admin.deleteUser(userId);
+    if (!error) return;
+    if (authErrorStatus(error) === 404 || error.message.toLowerCase().includes("user not found")) return;
+    logger.warn("admin.auth.delete_user", { code: error.code ?? null });
+    internal();
+  },
+};
+
 export function storagePathFor(userId: string, uploadId: string): string {
   const path = `${userId}/${uploadId}/original`;
   safePath(path);

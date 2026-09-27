@@ -3,12 +3,36 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   bucket: { createSignedUploadUrl: vi.fn(), download: vi.fn(), remove: vi.fn(), list: vi.fn() },
   from: vi.fn(),
+  deleteUser: vi.fn(),
 }));
-vi.mock("@/services/supabase/admin", () => ({ createAdminSupabase: () => ({ storage: { from: () => mocks.bucket }, from: mocks.from }) }));
+vi.mock("@/services/supabase/admin", () => ({ createAdminSupabase: () => ({ storage: { from: () => mocks.bucket }, from: mocks.from, auth: { admin: { deleteUser: mocks.deleteUser } } }) }));
 
-import { adminEntitlements, adminStorage, storagePathFor } from "./admin";
+import { adminAuth, adminEntitlements, adminStorage, storagePathFor } from "./admin";
 
 const uid = "11111111-1111-4111-8111-111111111111";
+
+describe("admin auth", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("hard-deletes a user without passing the soft-delete flag", async () => {
+    mocks.deleteUser.mockResolvedValue({ data: { user: null }, error: null });
+    await expect(adminAuth.deleteUser(uid)).resolves.toBeUndefined();
+    expect(mocks.deleteUser).toHaveBeenCalledWith(uid);
+  });
+
+  it.each([
+    { status: 404, message: "private" },
+    { status: 400, message: "User not found" },
+  ])("treats a missing user as an idempotent success", async (error) => {
+    mocks.deleteUser.mockResolvedValue({ data: { user: null }, error });
+    await expect(adminAuth.deleteUser(uid)).resolves.toBeUndefined();
+  });
+
+  it("maps other errors to INTERNAL", async () => {
+    mocks.deleteUser.mockResolvedValue({ data: { user: null }, error: { status: 500, code: "unexpected", message: "private" } });
+    await expect(adminAuth.deleteUser(uid)).rejects.toMatchObject({ code: "INTERNAL" });
+  });
+});
 
 describe("admin storage", () => {
   beforeEach(() => vi.clearAllMocks());
