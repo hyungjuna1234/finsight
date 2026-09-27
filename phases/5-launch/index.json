@@ -37,7 +37,10 @@
     {
       "step": 4,
       "name": "deploy-config",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T22:46:15+0900",
+      "summary": "서울 리전·일일 cleanup cron, 전 경로 보안 헤더와 장기 라우트 제한을 검증함; Vercel 연결·env·배포는 사람이 ops에서 수행",
+      "completed_at": "2026-09-27T22:49:42+0900"
     },
     {
       "step": 5,
