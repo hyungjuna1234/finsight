@@ -13,6 +13,7 @@ describe("isProtectedPath", () => {
     ["/billing/success", true],
     ["/onboarding/consent", true],
     ["/login", false],
+    ["/demo", false],
     ["/", false],
   ])("returns %s for %s", (pathname, expected) => {
     expect(isProtectedPath(pathname)).toBe(expected);

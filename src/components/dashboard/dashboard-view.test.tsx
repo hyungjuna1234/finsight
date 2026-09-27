@@ -20,3 +20,8 @@ it("거래가 없는 달을 안내한다", () => {
   expect(screen.getByText("이 달에는 거래가 없어요")).toBeInTheDocument();
   expect(screen.queryByRole("region", { name: "Pro 미리보기" })).not.toBeInTheDocument();
 });
+
+it("요청하면 거래 링크를 숨긴다", () => {
+  render(<DashboardView data={data} basePath="/demo" showTransactionsLink={false} />);
+  expect(screen.queryByRole("link", { name: "거래 전체 보기" })).not.toBeInTheDocument();
+});
