@@ -1,6 +1,7 @@
 import "server-only";
 
 import { AppError } from "@/lib/domain/errors";
+import type { Plan } from "@/lib/domain/types";
 import { createAdminSupabase } from "@/services/supabase/admin";
 
 const UUID_PATH = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\//i;
@@ -63,5 +64,56 @@ export const adminStorage = {
       if (error) internal();
     }
     return files.length;
+  },
+};
+
+export interface EntitlementRecord {
+  plan: Plan;
+  status: string | null;
+  periodEnd: Date | null;
+  freeInsightUsedAt: Date | null;
+}
+
+export const adminEntitlements = {
+  async get(userId: string): Promise<EntitlementRecord | null> {
+    const { data, error } = await createAdminSupabase()
+      .from("entitlements")
+      .select("plan,status,period_end,free_insight_used_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error) internal();
+    if (!data) return null;
+
+    return {
+      plan: data.plan,
+      status: data.status,
+      periodEnd: data.period_end === null ? null : new Date(data.period_end),
+      freeInsightUsedAt: data.free_insight_used_at === null ? null : new Date(data.free_insight_used_at),
+    };
+  },
+
+  async markFreeInsightUsed(userId: string): Promise<boolean> {
+    const supabase = createAdminSupabase();
+    const { error: insertError } = await supabase.from("entitlements").upsert(
+      {
+        user_id: userId,
+        plan: "free",
+        status: "inactive",
+        period_end: null,
+        synced_at: null,
+        free_insight_used_at: null,
+      },
+      { onConflict: "user_id", ignoreDuplicates: true },
+    );
+    if (insertError) internal();
+
+    const { data, error } = await supabase
+      .from("entitlements")
+      .update({ free_insight_used_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .is("free_insight_used_at", null)
+      .select("user_id");
+    if (error) internal();
+    return data?.length === 1;
   },
 };

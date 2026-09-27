@@ -149,6 +149,17 @@ describe("handler", () => {
     expect(output).not.toContain("private database detail");
   });
 
+  it("converts a failed Pro guard to the public 402 response", async () => {
+    const response = await handler({ auth: "user" }, async () => {
+      throw new AppError("PRO_REQUIRED");
+    })(new Request("https://finsight.example/api/insights"), route);
+
+    expect(response.status).toBe(402);
+    await expect(response.json()).resolves.toEqual({
+      error: { code: "PRO_REQUIRED", message: "Pro에서 이용할 수 있어요." },
+    });
+  });
+
   it("logs an unexpected error safely and hides its original text", async () => {
     const response = await handler({ auth: "public" }, async () => {
       throw new Error("스타벅스 5000 secret");

@@ -1,7 +1,10 @@
 import "server-only";
 
+import { isProActive } from "@/lib/analytics/plan";
 import { AppError } from "@/lib/domain/errors";
+import type { Plan } from "@/lib/domain/types";
 import { getConsentStatus } from "@/server/actions/consents";
+import { adminEntitlements } from "@/server/admin";
 import { createServerSupabase } from "@/services/supabase/server";
 
 export interface SessionUser {
@@ -26,4 +29,25 @@ export async function requireUser(): Promise<SessionUser> {
 export async function requireConsent(userId: string): Promise<void> {
   const { missing } = await getConsentStatus(userId);
   if (missing.length > 0) throw new AppError("CONSENT_REQUIRED");
+}
+
+export interface ViewerPlan {
+  plan: Plan;
+  isPro: boolean;
+  freeInsightAvailable: boolean;
+}
+
+export async function getPlan(userId: string, now: Date = new Date()): Promise<ViewerPlan> {
+  const entitlement = await adminEntitlements.get(userId);
+  const isPro = isProActive(entitlement, now);
+
+  return {
+    plan: isPro ? "pro" : "free",
+    isPro,
+    freeInsightAvailable: !isPro && entitlement?.freeInsightUsedAt == null,
+  };
+}
+
+export async function requirePro(userId: string, now: Date = new Date()): Promise<void> {
+  if (!(await getPlan(userId, now)).isPro) throw new AppError("PRO_REQUIRED");
 }
