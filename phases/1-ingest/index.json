@@ -29,7 +29,10 @@
     {
       "step": 3,
       "name": "column-mapper",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T13:43:24+0900",
+      "summary": "Claude 모델·사용량 모듈, 지연 싱글톤 getClaude, zod 구조화 출력과 안전한 오류 변환을 적용한 proposeMapping을 구현",
+      "completed_at": "2026-09-27T13:51:10+0900"
     },
     {
       "step": 4,
