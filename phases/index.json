@@ -22,7 +22,8 @@
     },
     {
       "dir": "4-billing",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-09-27T18:50:05+0900"
     },
     {
       "dir": "5-launch",
