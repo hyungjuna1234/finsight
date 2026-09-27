@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isIsoDate, isYearMonth, kstToday, monthRange, monthsBetween, nextMonth, prevMonth, toYearMonth } from "./month";
+import { formatPeriodLabel, isIsoDate, isYearMonth, kstToday, monthRange, monthsBetween, nextMonth, prevMonth, toYearMonth } from "./month";
 import type { IsoDate, YearMonth } from "./types";
 
 const iso = (value: string) => value as IsoDate;
@@ -40,5 +40,13 @@ describe("KST date helpers", () => {
   it("양끝을 포함한 월 목록을 만들고 역범위는 비운다", () => {
     expect(monthsBetween(ym("2025-11"), ym("2026-02"))).toEqual(["2025-11", "2025-12", "2026-01", "2026-02"]);
     expect(monthsBetween(ym("2026-02"), ym("2026-01"))).toEqual([]);
+  });
+
+  it.each([
+    ["2026-09-01", "2026-09-30", "9월"],
+    ["2026-07-01", "2026-09-30", "7~9월"],
+    ["2025-12-01", "2026-01-31", "2025년 12월~2026년 1월"],
+  ])("%s~%s 기간을 %s로 표시한다", (from, to, expected) => {
+    expect(formatPeriodLabel(iso(from), iso(to))).toBe(expected);
   });
 });

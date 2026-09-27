@@ -84,3 +84,13 @@ export function monthsBetween(from: YearMonth, to: YearMonth): YearMonth[] {
   for (let current = from; current <= to; current = nextMonth(current)) months.push(current);
   return months;
 }
+
+export function formatPeriodLabel(from: IsoDate, to: IsoDate): string {
+  const [fromYear, fromMonth] = from.split("-");
+  const [toYear, toMonth] = to.split("-");
+  const startMonth = Number(fromMonth);
+  const endMonth = Number(toMonth);
+  if (fromYear === toYear && startMonth === endMonth) return `${startMonth}월`;
+  if (fromYear === toYear) return `${startMonth}~${endMonth}월`;
+  return `${fromYear}년 ${startMonth}월~${toYear}년 ${endMonth}월`;
+}
