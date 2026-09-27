@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "file-decode",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T13:32:50+0900",
+      "summary": "UPLOAD_LIMITS·확장자 검증, 내용 우선 sniffFile, CP949·UTF-16·RFC 4180·SheetJS 제한을 적용한 decodeFile 및 fixture 기반 테스트를 구현",
+      "completed_at": "2026-09-27T13:38:10+0900"
     },
     {
       "step": 2,
