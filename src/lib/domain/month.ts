@@ -3,6 +3,7 @@ import type { IsoDate, YearMonth } from "./types";
 const YEAR_MONTH_PATTERN = /^(\d{4})-(\d{2})$/;
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const KST_OFFSET_MS = 9 * 60 * 60 * 1_000;
+const DAY_MS = 24 * 60 * 60 * 1_000;
 
 function pad(value: number): string {
   return String(value).padStart(2, "0");
@@ -21,6 +22,12 @@ function parseYearMonth(value: YearMonth): { year: number; month: number } {
   const match = YEAR_MONTH_PATTERN.exec(value);
   if (!match) throw new RangeError("Invalid YearMonth");
   return { year: Number(match[1]), month: Number(match[2]) };
+}
+
+function isoDateUtc(value: IsoDate): number {
+  const match = ISO_DATE_PATTERN.exec(value);
+  if (!match) throw new RangeError("Invalid IsoDate");
+  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
 }
 
 function makeYearMonth(year: number, month: number): YearMonth {
@@ -83,6 +90,21 @@ export function monthsBetween(from: YearMonth, to: YearMonth): YearMonth[] {
   const months: YearMonth[] = [];
   for (let current = from; current <= to; current = nextMonth(current)) months.push(current);
   return months;
+}
+
+export function addDays(value: IsoDate, days: number): IsoDate {
+  if (!Number.isInteger(days)) throw new RangeError("Days must be an integer");
+  const date = new Date(isoDateUtc(value) + days * DAY_MS);
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}` as IsoDate;
+}
+
+export function daysBetween(from: IsoDate, to: IsoDate): number {
+  return (isoDateUtc(to) - isoDateUtc(from)) / DAY_MS;
+}
+
+export function formatMonthLabel(value: YearMonth, style: "long" | "short" = "long"): string {
+  const { year, month } = parseYearMonth(value);
+  return style === "short" ? `${month}월` : `${year}년 ${month}월`;
 }
 
 export function formatPeriodLabel(from: IsoDate, to: IsoDate): string {
