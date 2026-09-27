@@ -28,6 +28,12 @@ export async function loadTxViews(sb: ServerSupabase, userId: string, range: { f
   }
 }
 
+export async function hasTxInRange(sb: ServerSupabase, userId: string, range: { from: IsoDate; to: IsoDate }): Promise<boolean> {
+  const { data, error } = await sb.from("transactions").select("id").eq("user_id", userId).gte("occurred_on", range.from).lte("occurred_on", range.to).limit(1);
+  if (error) throw new AppError("INTERNAL");
+  return data.length > 0;
+}
+
 export async function loadDataMonthSpan(sb: ServerSupabase, userId: string): Promise<{ first: YearMonth; last: YearMonth } | null> {
   const readEdge = async (ascending: boolean): Promise<IsoDate | null> => {
     const { data, error } = await sb.from("transactions").select("occurred_on").eq("user_id", userId).order("occurred_on", { ascending }).limit(1);

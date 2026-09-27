@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { IsoDate } from "@/lib/domain/types";
-import { loadDataMonthSpan, loadTxViews, toTxView, type ServerSupabase } from "./tx-rows";
+import { hasTxInRange, loadDataMonthSpan, loadTxViews, toTxView, type ServerSupabase } from "./tx-rows";
 
 const row = (id: number) => ({ id: `t${id}`, card_id: null, occurred_on: "2026-09-01", merchant_raw: "상점", merchant_key: "상점", amount_krw: 1000, kind: "spend" as const, status: "posted" as const, category: "식비", category_source: "rule" as const, installment_months: null, foreign_amount: null, foreign_currency: null });
 
@@ -28,5 +28,12 @@ describe("transaction row loaders", () => {
     const makeQuery = () => { const q = { select: () => q, eq: () => q, order: () => q, limit: async () => ({ data: dates[call] ? [{ occurred_on: dates[call++] }] : [], error: null }) }; return q; };
     const sb = { from: () => makeQuery() } as unknown as ServerSupabase;
     expect(await loadDataMonthSpan(sb, "u1")).toEqual({ first: "2026-02", last: "2026-11" });
+  });
+
+  it("범위 안 거래 존재 여부만 한 행 조회한다", async () => {
+    const calls: string[] = [];
+    const query = { select: (v: string) => { calls.push(v); return query; }, eq: () => query, gte: () => query, lte: () => query, limit: async (n: number) => ({ data: n === 1 ? [{ id: "t1" }] : [], error: null }) };
+    expect(await hasTxInRange({ from: () => query } as unknown as ServerSupabase, "u1", { from: "2026-08-01" as IsoDate, to: "2026-08-31" as IsoDate })).toBe(true);
+    expect(calls).toEqual(["id"]);
   });
 });

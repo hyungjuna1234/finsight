@@ -8,7 +8,7 @@ it("renders recurring, trend, signed comparison, and plain insight previews", ()
   expect(screen.getByRole("heading", { name: "Pro 기능 미리보기" })).toBeInTheDocument();
   expect(screen.getByText("웨이브")).toBeInTheDocument();
   expect(screen.getAllByText(/다음 예상일/).length).toBeGreaterThan(0);
-  expect(screen.getByRole("list", { name: "월별 추이" })).toHaveTextContent("2026년 7월");
+  expect(screen.getByRole("list", { name: "월별 추이 데이터" })).toHaveTextContent("7월");
   const delta = screen.getByTestId("month-delta");
   expect(delta).toHaveTextContent(/[+−]₩/);
   expect(delta).toHaveClass(getDemoProPreview().delta.netDiff >= 0 ? "text-spend-up" : "text-spend-down");

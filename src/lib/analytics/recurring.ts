@@ -3,6 +3,7 @@ import { addDays, daysBetween } from "@/lib/domain/month";
 import type { IsoDate, KRW, TxView } from "@/lib/domain/types";
 
 export const RECURRING_RULES = { minOccurrences: 3, minGapDays: 25, maxGapDays: 35, amountRate: 0.1, amountAbs: 1000, activeWithinDays: 45 } as const;
+export const RECURRING_LOOKBACK_DAYS = 200;
 
 export interface RecurringItem {
   merchantKey: string;
