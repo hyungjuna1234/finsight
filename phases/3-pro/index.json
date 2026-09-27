@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "pro-views",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T17:57:03+0900",
+      "summary": "Free에는 비식별 Pro 티저만, Pro에는 전월 비교·월별 추이·정기결제 상세를 제공하는 서버 쿼리와 재사용 UI를 구현",
+      "completed_at": "2026-09-27T18:06:10+0900"
     },
     {
       "step": 2,
