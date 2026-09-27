@@ -29,7 +29,10 @@
     {
       "step": 3,
       "name": "cleanup-cron",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-27T22:43:03+0900",
+      "summary": "90일 지난 원본과 24시간 넘은 미진행 업로드를 제한된 배치로 안전하게 정리하는 Bearer 보호 cron을 추가함",
+      "completed_at": "2026-09-27T22:46:15+0900"
     },
     {
       "step": 4,
