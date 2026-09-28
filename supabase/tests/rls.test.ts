@@ -4,6 +4,7 @@ import { asAnon, asOwner, asService, asUser, createTestDb } from "./db";
 
 const USER_A = "11111111-1111-4111-8111-111111111111";
 const USER_B = "22222222-2222-4222-8222-222222222222";
+const UPLOAD_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
 async function expectDenied(operation: Promise<unknown>) {
   await expect(operation).rejects.toThrow();
@@ -36,7 +37,7 @@ describe("database RLS and grants", () => {
     await asUser(db, USER_A);
     const card = await db.query<{ id: string }>("insert into cards (user_id, name) values ($1, 'A 카드') returning id", [USER_A]);
     const cardId = card.rows[0]!.id;
-    const upload = await db.query<{ id: string }>("insert into uploads (user_id, card_id, storage_path, filename, sha256, byte_size, status) values ($1, $2, 'a/original', 'a.csv', 'sha-a', 10, 'uploaded') returning id", [USER_A, cardId]);
+    const upload = await db.query<{ id: string }>("insert into uploads (id, user_id, card_id, storage_path, filename, sha256, byte_size, status) values ($3::uuid, $1::uuid, $2, $1::text || '/' || $3::text || '/original', 'a.csv', 'sha-a', 10, 'uploaded') returning id", [USER_A, cardId, UPLOAD_A]);
     await db.query("insert into transactions (user_id, card_id, upload_id, occurred_on, merchant_raw, merchant_key, amount_krw, kind, status, category, category_source, identity_key) values ($1, $2, $3, '2026-09-01', '상점', '상점', 1000, 'spend', 'posted', '식비', 'rule', 'tx-a')", [USER_A, cardId, upload.rows[0]!.id]);
     await db.query("insert into insights (user_id, month, content) values ($1, '2026-09', '{}')", [USER_A]);
 
@@ -90,7 +91,7 @@ describe("database RLS and grants", () => {
   it("rejects transaction categories outside the domain list", async () => {
     await asUser(db, USER_A);
     const card = await db.query<{ id: string }>("insert into cards (user_id, name) values ($1, 'A 카드') returning id", [USER_A]);
-    const upload = await db.query<{ id: string }>("insert into uploads (user_id, storage_path, filename, sha256, byte_size, status) values ($1, 'a/original', 'a.csv', 'sha-a', 10, 'uploaded') returning id", [USER_A]);
+    const upload = await db.query<{ id: string }>("insert into uploads (id, user_id, storage_path, filename, sha256, byte_size, status) values ($2::uuid, $1::uuid, $1::text || '/' || $2::text || '/original', 'a.csv', 'sha-a', 10, 'uploaded') returning id", [USER_A, UPLOAD_A]);
     await expectDenied(db.query("insert into transactions (user_id, card_id, upload_id, occurred_on, merchant_raw, merchant_key, amount_krw, kind, status, category, category_source, identity_key) values ($1, $2, $3, '2026-09-01', '상점', '상점', 1000, 'spend', 'posted', '잘못된 분류', 'rule', 'bad')", [USER_A, card.rows[0]!.id, upload.rows[0]!.id]));
   });
 
@@ -100,5 +101,21 @@ describe("database RLS and grants", () => {
     const policies = await db.query("select * from pg_policies where schemaname = 'storage'");
     expect(bucket.rows).toEqual([{ id: "statements", public: false, file_size_limit: 10485760 }]);
     expect(policies.rows).toHaveLength(0);
+  });
+
+  it("enforces owner-scoped upload storage paths on insert and update", async () => {
+    await asUser(db, USER_A);
+    await db.query(
+      "insert into uploads (id, user_id, storage_path, filename, sha256, byte_size, status) values ($2::uuid, $1::uuid, $1::text || '/' || $2::text || '/original', 'valid.csv', 'sha-valid', 10, 'uploaded')",
+      [USER_A, UPLOAD_A],
+    );
+
+    await expect(
+      db.query("insert into uploads (user_id, storage_path, filename, sha256, byte_size, status) values ($1, 'x', 'invalid.csv', 'sha-invalid', 10, 'uploaded')", [USER_A]),
+    ).rejects.toMatchObject({ code: "23514" });
+    await expect(db.query("update uploads set storage_path = 'x' where id = $1", [UPLOAD_A])).rejects.toMatchObject({ code: "23514" });
+    await expect(
+      db.query("update uploads set storage_path = $1 || '/' || id || '/original' where id = $2", [USER_B, UPLOAD_A]),
+    ).rejects.toMatchObject({ code: "23514" });
   });
 });

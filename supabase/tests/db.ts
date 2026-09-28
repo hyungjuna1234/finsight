@@ -1,18 +1,20 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { PGlite } from "@electric-sql/pglite";
 
 const testsDirectory = fileURLToPath(new URL(".", import.meta.url));
-const migrationUrl = new URL("../migrations/20260926000000_init.sql", import.meta.url);
+const migrationsDirectory = fileURLToPath(new URL("../migrations/", import.meta.url));
 
 export async function createTestDb(): Promise<PGlite> {
   const db = new PGlite();
-  const [stubs, migration] = await Promise.all([
+  const [stubs, migrationNames] = await Promise.all([
     readFile(`${testsDirectory}stubs.sql`, "utf8"),
-    readFile(migrationUrl, "utf8"),
+    readdir(migrationsDirectory),
   ]);
   await db.exec(stubs);
-  await db.exec(migration);
+  for (const migrationName of migrationNames.filter((name) => name.endsWith(".sql")).sort()) {
+    await db.exec(await readFile(`${migrationsDirectory}${migrationName}`, "utf8"));
+  }
   return db;
 }
 
