@@ -53,7 +53,10 @@
     {
       "step": 6,
       "name": "landing-closing",
-      "status": "pending"
+      "status": "completed",
+      "summary": "Free 첫 AI 리포트를 강조한 요금 카드, 분류 수정 FAQ, 마지막 초록 CTA 섹션을 구현",
+      "started_at": "2026-09-28T22:52:53+0900",
+      "completed_at": "2026-09-28T22:57:36+0900"
     },
     {
       "step": 7,
