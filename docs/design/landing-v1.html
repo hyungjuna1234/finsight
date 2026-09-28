@@ -1,0 +1,670 @@
+<!-- FinSight 랜딩 확정 시안 v1 (2026-09-28). 구현 참고용 정적 HTML이다. 구현 기준은 phases/7-landing의 step 파일과 docs/UI_GUIDE.md "랜딩 예외". 숫자는 예시이며 실제 구현은 getLandingShowcase()의 데모 데이터로 계산한다. 폰트 파일은 포함하지 않는다. -->
+<title>FinSight 랜딩 시안</title>
+<style>
+@font-face{font-family:"Pretendard Variable";src:url("fonts/PretendardVariable.woff2") format("woff2-variations"),url("fonts/PretendardVariable.woff2") format("woff2");font-weight:45 920;font-display:swap}
+:root{
+  color-scheme:light;
+  --bg:#F6F7F5;--surface:#FFFFFF;--line:#E1E5E2;--line-strong:#879089;
+  --ink:#18201C;--body:#3B4540;--muted:#66716B;--accent:#0E6B55;--accent-hover:#0B5745;--accent-soft:#E4F1EC;--mark:#CDE8DD;
+  --up:#C43A2E;--up-on-dark:#FF907F;--weekday:#C9D0CB;
+  --c1:#557C70;--c2:#758A72;--c3:#8A7D67;--c4:#657C8A;--c5:#8B7070;--c6:#77758B;--c7:#6E897F;--c8:#B3BBB6;
+  --canvas:#DFE4E1;--note-bg:#FFF6DB;--note-ink:#5E4100;--note-line:#D9B550;
+  --font:"Pretendard Variable","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* 검토용 막대 — 시안 밖 */
+.review{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 16px;background:#FBFCFB;border-bottom:1px solid var(--line);font-size:13px}
+.review .name{font-weight:650;margin-right:auto}
+.review .name span{font-weight:400;color:var(--muted);margin-left:6px}
+.rbtn{font:inherit;font-size:13px;border:1px solid var(--line-strong);background:#fff;color:var(--ink);border-radius:6px;padding:0 11px;min-height:34px;cursor:pointer}
+.rbtn[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.seg{display:inline-flex}
+.seg .rbtn{border-radius:0}
+.seg .rbtn:first-child{border-radius:6px 0 0 6px}
+.seg .rbtn:last-child{border-radius:0 6px 6px 0;margin-left:-1px}
+.canvas{padding-block:24px 56px;padding-inline:16px}
+.frame{container:land/inline-size;max-width:1180px;margin-inline:auto;background:var(--bg);border:1px solid #CBD2CE;border-radius:10px;overflow:hidden;transition:max-width .25s ease}
+.frame.mobile{max-width:390px;border-radius:24px}
+@media (max-width:520px){.canvas{padding:0}.frame,.frame.mobile{border:0;border-radius:0}}
+
+/* 설계 메모 */
+.note{margin-bottom:24px;background:var(--note-bg);border:1px dashed var(--note-line);color:var(--note-ink);border-radius:6px;padding:12px 14px;font-size:13px;line-height:1.6;max-width:760px}
+.note b{font-weight:700}
+.final .note{color:var(--note-ink)}
+
+/* 랜딩 공통 */
+.land{font-size:15px;line-height:1.6;color:var(--ink);word-break:keep-all;overflow-wrap:break-word}
+.land p{margin:0}
+.land h1,.land h2,.land h3{margin:0;text-wrap:balance}
+.wrap{max-width:1080px;margin-inline:auto;padding-inline:16px}
+@container land (min-width:640px){.wrap{padding-inline:32px}}
+.block{padding-block:56px}
+@container land (min-width:860px){.block{padding-block:88px}}
+.alt{background:var(--surface);border-block:1px solid var(--line)}
+.eyebrow{font-size:13px;font-weight:650;color:var(--accent);letter-spacing:.02em}
+.h2{font-size:clamp(1.5rem,1.05rem + 1.7cqi,2.25rem);font-weight:720;letter-spacing:-.025em;line-height:1.28;margin-top:8px!important;max-width:24em}
+.lead{margin-top:12px!important;color:var(--body);max-width:38em}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 20px;border-radius:6px;font-size:15px;font-weight:650;text-decoration:none;border:1px solid transparent;cursor:pointer;font-family:inherit}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-secondary{background:var(--surface);color:var(--ink);border-color:var(--line-strong)}
+.btn-secondary:hover{background:var(--bg)}
+.cta-row{display:flex;flex-wrap:wrap;gap:10px}
+.tag{display:inline-block;font-size:11.5px;font-weight:650;line-height:1;padding:4px 7px;border-radius:4px;background:var(--bg);color:var(--muted);border:1px solid var(--line);vertical-align:middle}
+.tag.pro{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* 헤더 */
+.site-header{background:var(--surface);border-bottom:1px solid var(--line)}
+.sh{display:flex;align-items:center;justify-content:space-between;min-height:56px}
+.logo{font-weight:720;font-size:17px;color:var(--ink);text-decoration:none;letter-spacing:-.01em}
+.sh nav{display:flex;gap:18px}
+.sh nav a{font-size:14px;color:var(--muted);text-decoration:none}
+.sh nav a:hover{color:var(--ink)}
+
+/* ① 히어로 */
+.hero{padding-block:40px 56px}
+@container land (min-width:900px){.hero{padding-block:48px 88px}}
+.hero-grid{display:grid;gap:40px}
+@container land (min-width:900px){.hero-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.04fr);gap:56px;align-items:center}}
+.h1{font-size:clamp(2rem,1.1rem + 3.3cqi,3.5rem);font-weight:760;letter-spacing:-.035em;line-height:1.18}
+.h1 mark{color:inherit;background:linear-gradient(transparent 60%,var(--mark) 60%,var(--mark) 94%,transparent 94%);padding-inline:.04em}
+.hero-sub{margin-top:18px!important;font-size:17px;color:var(--body);max-width:30em}
+.hero .cta-row{margin-top:28px}
+.hero-trust{display:flex;flex-wrap:wrap;gap:4px 16px;list-style:none;margin:20px 0 0;padding:0;font-size:13.5px;color:var(--muted)}
+.hero-trust li{display:inline-flex;align-items:center;gap:7px}.hero-trust li::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent)}
+
+.stage{margin:0;display:grid;gap:10px}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;box-shadow:0 18px 40px -28px rgba(24,32,28,.45)}
+.sheet-tab{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--body);background:#FAFBFA}
+.sheet-tab svg{width:16px;height:16px;color:var(--accent);flex:none}
+.grid{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px}
+.grid th{height:22px;font-size:11px;font-weight:500;color:var(--muted);background:#F1F3F1;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.grid td{height:30px;padding:0 8px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grid tr>*:last-child{border-right:0}
+.grid td.rn{text-align:center;color:var(--muted);font-size:11px;background:#F1F3F1;padding:0}
+.grid tr.hdr td{font-weight:650;background:#FAFBFA;font-size:12.5px}
+.grid td.amt{text-align:right}
+.grid .ai-h{color:var(--accent)}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--c) 15%,#fff);color:color-mix(in srgb,var(--c) 60%,#18201C)}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--c)}
+.flow-note{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);padding-left:4px}
+.flow-note svg{width:16px;height:16px;color:var(--accent)}
+.bars{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.bars-head{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted)}
+.bars-head strong{font-size:20px;color:var(--ink);font-weight:720}
+.bars ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px}
+.bars li{display:grid;grid-template-columns:78px minmax(0,1fr) 36px;align-items:center;gap:10px;font-size:12.5px;color:var(--body)}
+.track{height:10px;background:#EEF1EF;border-radius:2px;overflow:hidden}
+.fill{display:block;height:100%;width:var(--w);background:var(--c);transform-origin:left;border-radius:2px}
+.bars .pct{text-align:right}
+.ai-card{background:var(--ink);color:#fff;border-radius:8px;padding:16px 18px;display:grid;gap:8px}
+.ai-top{display:flex;justify-content:space-between;font-size:12px;color:#AEB8B2;font-weight:600;letter-spacing:.02em}
+.ai-headline{font-size:17px;font-weight:650;line-height:1.45}
+.ai-metric{display:flex;align-items:baseline;gap:10px;font-size:13px;color:#C9D1CC}
+.ai-metric .n{font-size:28px;font-weight:760;color:var(--up-on-dark);letter-spacing:-.02em}
+.stage-cap{font-size:12px;color:var(--muted);padding-left:4px}
+
+/* ② 찾아내는 것 */
+.tiles{display:grid;gap:16px;margin-top:32px}
+@container land (min-width:700px){.tiles{grid-template-columns:1fr 1fr}}
+.tile{border:1px solid var(--line);border-radius:8px;padding:22px;background:var(--bg);display:grid;gap:6px;align-content:start}
+.t-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.t-label{font-size:14px;font-weight:650;color:var(--body)}
+.t-num{font-size:clamp(2.25rem,1.5rem + 2.4cqi,3.25rem);font-weight:760;letter-spacing:-.035em;line-height:1.1;margin-top:4px!important}
+.t-num small{font-size:.5em;font-weight:650;letter-spacing:-.01em;color:var(--body);margin-right:.2em}
+.t-num .up{color:var(--up)}
+.t-sub{font-size:14px;color:var(--muted)}
+.viz{margin-top:16px}
+.rec{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.rec li{display:grid;grid-template-columns:72px minmax(0,1fr) 68px;gap:10px;align-items:center;font-size:13px;color:var(--body)}
+.rec .rt{height:8px;background:#E7EBE8;border-radius:2px;overflow:hidden}
+.rec .rf{display:block;height:100%;width:var(--w);background:var(--c1);transform-origin:left}
+.rec .num{text-align:right}
+.cmp{display:grid;grid-template-columns:repeat(2,minmax(0,96px));gap:24px;align-items:end;height:150px}
+.cmp-col{display:grid;grid-template-rows:1fr auto auto;height:100%;font-size:12.5px;color:var(--muted)}
+.cmp-bar{align-self:end;height:var(--h);background:var(--weekday);border-radius:3px 3px 0 0;position:relative;overflow:hidden;transform-origin:bottom}
+.cmp-bar.cur{background:var(--c1)}
+.cmp-bar .inc{position:absolute;inset:0 0 auto 0;height:var(--h2);background:var(--up)}
+.cmp-col p:first-of-type{margin-top:8px!important;color:var(--body);font-weight:600}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;height:130px;align-items:end}
+.wk{display:grid;grid-template-rows:1fr auto;height:100%;text-align:center;font-size:12px;color:var(--muted)}
+.wk span{align-self:end;height:var(--h);background:var(--weekday);border-radius:3px 3px 0 0;transform-origin:bottom}
+.wk.we span{background:var(--accent)}
+.wk.we em{color:var(--accent);font-weight:700}
+.wk em{font-style:normal;margin-top:6px}
+.stack{display:flex;height:22px;border-radius:4px;overflow:hidden;gap:2px}
+.stack span{width:var(--w);background:var(--c);transform-origin:left}
+.legend{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--body)}
+.legend li{display:inline-flex;align-items:center;gap:6px}
+.legend li::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--c)}
+
+/* ③ AI 리포트 */
+.report-grid{display:grid;gap:24px;margin-top:36px}
+@container land (min-width:900px){.report-grid{grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:40px;align-items:start}}
+.report-card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:22px 22px 18px 30px;display:grid;gap:18px;box-shadow:0 18px 40px -30px rgba(24,32,28,.4)}
+.rc-head{display:flex;align-items:center;justify-content:space-between}
+.rc-head h3{font-size:17px;font-weight:700}
+.blk{position:relative}
+.mk{position:absolute;left:-30px;top:0;width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:11.5px;font-weight:700;display:grid;place-items:center}
+.rc-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px;padding:12px 14px;background:var(--bg);border-radius:6px}
+.m-l{font-size:12px;color:var(--muted)}
+.m-v{font-size:19px;font-weight:720;letter-spacing:-.02em}
+.m-v.up{color:var(--up)}
+.rc-headline{font-size:18px;font-weight:700;line-height:1.45}
+.report-card ul{margin:8px 0 0;padding-left:18px;display:grid;gap:4px;font-size:14px;color:var(--body)}
+.rc-sub{font-size:13.5px;font-weight:650}
+.rc-disc{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+.rc-fb{display:flex;gap:16px;margin-top:-6px}
+.rc-fb button{font:inherit;font-size:13px;color:var(--muted);background:none;border:0;padding:4px 0;cursor:pointer}
+.side{display:grid;gap:24px}
+.callouts{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+.callouts li{display:grid;grid-template-columns:20px 1fr;gap:12px}
+.callouts .mk{position:static}
+.callouts b{display:block;font-size:15px}
+.callouts p{font-size:14px;color:var(--body)}
+.chat{border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}
+.chat-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13.5px;font-weight:650}
+.msgs{display:grid;gap:10px;padding:14px}
+.msg{max-width:88%;font-size:14px;line-height:1.55;padding:9px 12px;border-radius:10px}
+.msg.me{justify-self:end;background:var(--accent-soft);color:var(--ink);border-bottom-right-radius:3px}
+.msg.ai{background:var(--bg);color:var(--body);border-bottom-left-radius:3px}
+.msg.ai strong{color:var(--ink)}
+.sugs{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 14px}
+.sugs span{font-size:12.5px;color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+
+/* ④ 3단계 */
+.flow{list-style:none;margin:36px 0 0;padding:0;display:grid;gap:28px}
+@container land (min-width:760px){.flow{grid-template-columns:repeat(3,minmax(0,1fr));gap:32px}}
+.flow li{position:relative;display:grid;gap:8px;align-content:start}
+.f-icon{display:flex;align-items:center;gap:10px}
+.f-no{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--accent);color:var(--accent);font-weight:720;font-size:14px;display:grid;place-items:center;background:var(--surface)}
+.f-icon svg{width:26px;height:26px;color:var(--ink)}
+@container land (min-width:760px){.flow li:not(:last-child)::after{content:"";position:absolute;top:14px;left:84px;right:-24px;border-top:1.5px dashed var(--line-strong)}}
+.flow h3{font-size:17px;font-weight:700;margin-top:6px!important}
+.flow p{font-size:14px;color:var(--body)}
+.flow .key{background:var(--mark);padding-inline:.15em;font-weight:650;color:var(--ink)}
+.issuers{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:32px}
+.issuers span{font-size:13px;border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:4px 10px;color:var(--body)}
+.issuers a{font-size:14px;color:var(--accent);margin-left:8px;text-decoration:none}
+.issuers a:hover{text-decoration:underline;text-underline-offset:4px}
+.mobile-tip{margin-top:12px!important;font-size:13.5px;color:var(--muted)}
+
+/* ⑤ 데이터 흐름 */
+.dflow{display:grid;gap:10px;margin-top:36px;align-items:stretch}
+@container land (min-width:900px){.dflow{grid-template-columns:minmax(0,.8fr) 36px minmax(0,.9fr) 36px minmax(0,1.3fr)}}
+.dnode{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:16px 18px}
+.dnode.ai{border-color:var(--ink);border-width:1.5px}
+.dn-t{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.dn-t span{font-size:12px;font-weight:500;color:var(--muted)}
+.fields{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.fields li{font-size:13px;border-radius:4px;padding:3px 9px;background:var(--bg);color:var(--body)}
+.fields li.sens{background:#F7E7E4;color:#8A2A20}
+.proc{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px;font-size:13.5px;color:var(--body)}
+.proc li{display:flex;gap:8px;align-items:flex-start}
+.proc svg{width:16px;height:16px;flex:none;margin-top:3px;color:var(--accent)}
+.send{width:100%;border-collapse:collapse;margin-top:10px;font-size:13.5px}
+.send th{text-align:left;font-weight:600;color:var(--ink);padding:8px 10px 8px 0;width:42%;white-space:nowrap}
+.send td{color:var(--body);padding:8px 0}
+.send tr+tr>*{border-top:1px solid var(--line)}
+.darrow{display:grid;place-items:center;color:var(--line-strong)}
+.darrow svg{width:22px;height:22px;transform:rotate(90deg)}
+@container land (min-width:900px){.darrow svg{transform:none}}
+.never{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-top:16px;font-size:14px}
+.never p{font-weight:650}
+.never ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 14px;color:var(--body)}
+.never li{display:inline-flex;align-items:center;gap:5px}
+.never svg{width:14px;height:14px;color:var(--up)}
+.timeline{margin-top:36px;max-width:640px}
+.tl-bar{position:relative;height:40px;border-bottom:2px solid var(--ink)}
+.tl-bar::before,.tl-bar::after{content:"";position:absolute;bottom:-6px;width:10px;height:10px;border-radius:50%;background:var(--ink)}
+.tl-bar::before{left:0}.tl-bar::after{right:0;background:var(--surface);border:2px solid var(--ink)}
+.tl-start,.tl-end{position:absolute;top:0;font-size:13px;font-weight:650}
+.tl-start{left:0}.tl-end{right:0}
+.timeline p{margin-top:14px!important;font-size:14px;color:var(--body)}
+
+/* ⑥ 요금 */
+.plans{display:grid;gap:16px;margin-top:32px}
+@container land (min-width:700px){.plans{grid-template-columns:1fr 1fr}}
+.plan{border:1px solid var(--line);border-radius:8px;padding:24px;background:var(--bg);display:grid;gap:10px;align-content:start}
+.plan.pro{background:var(--surface);border-color:var(--ink)}
+.p-name{font-size:14px;font-weight:700;color:var(--muted)}
+.p-price{font-size:2.25rem;font-weight:760;letter-spacing:-.03em;line-height:1.1}
+.p-price span{font-size:15px;font-weight:600;color:var(--muted);margin-left:2px}
+.plan ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:8px;font-size:14.5px;color:var(--body)}
+.plan li{display:flex;gap:8px;align-items:flex-start}
+.plan li svg{width:16px;height:16px;margin-top:4px;flex:none;color:var(--accent)}
+.plan li.hl{background:var(--accent-soft);color:var(--ink);font-weight:650;border-radius:4px;padding:4px 8px;margin-inline:-8px}
+.p-note{font-size:13px;color:var(--muted);margin-top:6px!important}
+
+/* ⑦ FAQ */
+.faq-list{margin-top:24px;border-top:1px solid var(--line);max-width:760px}
+.faq-list details{border-bottom:1px solid var(--line);padding-block:16px}
+.faq-list summary{cursor:pointer;font-size:15px;font-weight:600}
+.faq-list details p{margin-top:10px!important;font-size:14px;color:var(--body)}
+
+/* ⑧ 마지막 CTA */
+.final{background:var(--accent);color:#fff;padding-block:64px}
+@container land (min-width:860px){.final{padding-block:88px}}
+.final h2{font-size:clamp(1.75rem,1.1rem + 2.3cqi,2.75rem);font-weight:760;letter-spacing:-.03em;line-height:1.22;max-width:18em}
+.final p.fl{margin-top:14px!important;color:#D9EDE5;max-width:34em;font-size:16px}
+.final .cta-row{margin-top:28px}
+.btn-invert{background:#fff;color:var(--accent)}
+.btn-invert:hover{background:var(--accent-soft)}
+.btn-ghost{color:#fff;border-color:rgba(255,255,255,.7)}
+.btn-ghost:hover{background:var(--accent-hover)}
+.final a:focus-visible{outline-color:#fff}
+.foot{padding-block:24px;font-size:12.5px;color:var(--muted);background:var(--surface)}
+.foot .wrap{display:flex;flex-wrap:wrap;gap:6px 16px}
+
+/* 움직임: 로드 때 한 번, 움직임 줄이기면 없음 */
+@media (prefers-reduced-motion:no-preference){
+  .stage.play .grid tbody tr{animation:fadeIn .3s ease-out both;animation-delay:calc(.1s + var(--i)*.06s)}
+  .stage.play td.d{animation:sel .2s steps(1) none;animation-delay:calc(1s + var(--i)*.2s)}
+  .stage.play .chip{animation:pop .25s ease-out both;animation-delay:calc(1.05s + var(--i)*.2s)}
+  .stage.play .flow-note{animation:fadeIn .3s ease-out both;animation-delay:2.2s}
+  .stage.play .bars{animation:fadeIn .3s ease-out both;animation-delay:2.3s}
+  .stage.play .fill{animation:growX .55s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(2.45s + var(--i)*.07s)}
+  .stage.play .ai-card{animation:rise .45s ease-out both;animation-delay:3.2s}
+  .tile.in .rf,.tile.in .stack span{animation:growX .6s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*.06s)}
+  .tile.in .cmp-bar,.tile.in .wk span{animation:growY .6s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*.05s)}
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+@keyframes sel{from,to{box-shadow:inset 0 0 0 2px var(--accent)}}
+@keyframes growX{from{transform:scaleX(0)}to{transform:none}}
+@keyframes growY{from{transform:scaleY(0)}to{transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+</style>
+
+<div class="review" role="toolbar" aria-label="시안 보기 설정">
+  <p class="name">FinSight 랜딩 시안 <span>v1 · 예시 데이터</span></p>
+  <button type="button" class="rbtn" id="toggle-notes" aria-pressed="false">설계 메모 보기</button>
+  <button type="button" class="rbtn" id="replay">히어로 다시 재생</button>
+  <div class="seg" role="group" aria-label="화면 폭">
+    <button type="button" class="rbtn" id="w-desktop" aria-pressed="true">데스크톱</button>
+    <button type="button" class="rbtn" id="w-mobile" aria-pressed="false">모바일</button>
+  </div>
+</div>
+
+<div class="canvas">
+<div class="frame" id="frame">
+<div class="land">
+
+  <header class="site-header">
+    <div class="wrap sh">
+      <a class="logo" href="#hero">FinSight</a>
+      <nav aria-label="주요 메뉴"><a href="#pricing">요금</a><a href="#steps">가이드</a><a href="#final">로그인</a></nav>
+    </div>
+  </header>
+
+  <!-- ① 히어로 -->
+  <section class="hero" id="hero">
+    <div class="wrap">
+      <aside class="note" hidden><b>① 히어로 · 변환 스토리.</b> 엑셀 원본 → AI가 카테고리 열을 채움 → 카테고리 막대 → AI 리포트 순서로 약 4초 동안 한 번 재생돼요. 움직임 줄이기 설정이면 완성된 화면만 보여요. 구현할 때는 서버에서 그린 HTML·SVG와 CSS만 써서 JS 없이도 보이게 해요. 헤드라인은 약속형이고, 질문형·손실형은 2주 주기 테스트 후보예요. 이벤트: <code>landing_cta {cta, section: "hero"}</code>.</aside>
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">연동 없는 AI 지출 정리</p>
+          <h1 class="h1" style="margin-top:10px">월급이 <mark>어디로 새는지</mark>, 파일 하나로 AI가 찾아 드려요</h1>
+          <p class="hero-sub">카드사 홈페이지에서 받은 이용내역 파일만 올리면, AI가 카테고리를 나누고 새는 돈을 짚어 줘요.</p>
+          <div class="cta-row"><a class="btn btn-primary" href="#final">무료로 시작</a><a class="btn btn-secondary" href="#insights">로그인 없이 예시 보기</a></div>
+          <ul class="hero-trust"><li>계좌·카드 연동 없음</li><li>원본은 90일 뒤 자동 삭제</li><li>첫 AI 리포트 무료</li></ul>
+        </div>
+
+        <figure class="stage play" id="stage" aria-label="이용내역 파일이 AI 리포트로 바뀌는 과정 예시">
+          <div class="sheet">
+            <div class="sheet-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/><path d="M8 12h8M8 16h8M12 12v6"/></svg>카드이용내역_2026-09.xlsx</div>
+            <table class="grid">
+              <colgroup><col style="width:9%"><col style="width:15%"><col style="width:27%"><col style="width:20%"><col style="width:29%"></colgroup>
+              <thead>
+                <tr><th></th><th>A</th><th>B</th><th>C</th><th>D</th></tr>
+              </thead>
+              <tbody>
+                <tr class="hdr" style="--i:0"><td class="rn">1</td><td>이용일</td><td>가맹점</td><td class="amt">이용금액</td><td class="ai-h">AI 분류</td></tr>
+                <tr style="--i:1"><td class="rn">2</td><td class="num">09.02</td><td>골목식당</td><td class="amt num">12,000</td><td class="d" style="--i:0"><span class="chip" style="--c:var(--c1)">식비</span></td></tr>
+                <tr style="--i:2"><td class="rn">3</td><td class="num">09.02</td><td>나무카페</td><td class="amt num">4,800</td><td class="d" style="--i:1"><span class="chip" style="--c:var(--c5)">카페·간식</span></td></tr>
+                <tr style="--i:3"><td class="rn">4</td><td class="num">09.03</td><td>한끼배달</td><td class="amt num">23,500</td><td class="d" style="--i:2"><span class="chip" style="--c:var(--c1)">식비</span></td></tr>
+                <tr style="--i:4"><td class="rn">5</td><td class="num">09.05</td><td>웨이브</td><td class="amt num">10,900</td><td class="d" style="--i:3"><span class="chip" style="--c:var(--c7)">구독·디지털</span></td></tr>
+                <tr style="--i:5"><td class="rn">6</td><td class="num">09.06</td><td>우리마트</td><td class="amt num">38,200</td><td class="d" style="--i:4"><span class="chip" style="--c:var(--c2)">마트·편의점</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="flow-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>카테고리별로 모아요 · 9월 312건</p>
+          <div class="bars">
+            <div class="bars-head"><span>9월 지출</span><strong class="num">₩1,234,000</strong></div>
+            <ul>
+              <li style="--i:0;--w:100%;--c:var(--c1)"><span>식비</span><span class="track"><span class="fill"></span></span><span class="pct num">32%</span></li>
+              <li style="--i:1;--w:56.3%;--c:var(--c2)"><span>마트·편의점</span><span class="track"><span class="fill"></span></span><span class="pct num">18%</span></li>
+              <li style="--i:2;--w:43.8%;--c:var(--c3)"><span>쇼핑</span><span class="track"><span class="fill"></span></span><span class="pct num">14%</span></li>
+              <li style="--i:3;--w:31.3%;--c:var(--c4)"><span>의료·건강</span><span class="track"><span class="fill"></span></span><span class="pct num">10%</span></li>
+              <li style="--i:4;--w:21.9%;--c:var(--c5)"><span>카페·간식</span><span class="track"><span class="fill"></span></span><span class="pct num">7%</span></li>
+              <li style="--i:5;--w:59.4%;--c:var(--c8)"><span>기타</span><span class="track"><span class="fill"></span></span><span class="pct num">19%</span></li>
+            </ul>
+          </div>
+          <div class="ai-card">
+            <p class="ai-top"><span>AI 리포트</span><span>예시</span></p>
+            <p class="ai-headline">외식 지출이 늘고 작은 간식 지출은 줄었어요</p>
+            <p class="ai-metric"><span class="n num">▲ 38%</span><span>식비 · 지난달보다</span></p>
+          </div>
+          <figcaption class="stage-cap">예시 데이터로 만든 화면이에요</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ② 찾아내는 것 -->
+  <section class="block alt" id="insights">
+    <div class="wrap">
+      <aside class="note" hidden><b>② 한 달 내역에서 찾아내는 것.</b> 제품이 실제로 계산하는 지표 네 개예요(정기결제 합계, 전월 대비 카테고리 증가, 주말 비율 <code>weekendShare</code>, 1위 카테고리). 이 숫자들은 AI가 아니라 코드가 계산하므로 "AI가 찾았다"고 쓰지 않았어요(과장 표시 방지). 구현할 때는 숫자를 /demo 데이터에서 계산해 데모 화면과 맞춰요. 화면에 들어오면 숫자와 막대가 한 번 채워져요. Pro 기능에는 Pro 표시를 붙였어요.</aside>
+      <p class="eyebrow">한 달 내역에서 찾아내는 것</p>
+      <h2 class="h2">새는 돈이 숫자로 보여요</h2>
+      <p class="lead">아래는 예시예요. 내 파일을 올리면 내 숫자로 바뀌어요.</p>
+      <div class="tiles">
+        <article class="tile">
+          <div class="t-top"><p class="t-label">잊고 있던 정기결제</p><span class="tag">목록은 Pro</span></div>
+          <p class="t-num num"><small>월</small><span data-count="119100" data-prefix="₩">₩119,100</span></p>
+          <p class="t-sub">5건 · 1년이면 ₩1,429,200</p>
+          <div class="viz">
+            <ul class="rec">
+              <li style="--i:0;--w:100%"><span>바른헬스</span><span class="rt"><span class="rf"></span></span><span class="num">₩55,000</span></li>
+              <li style="--i:1;--w:76.4%"><span>푸른통신</span><span class="rt"><span class="rf"></span></span><span class="num">₩42,000</span></li>
+              <li style="--i:2;--w:19.8%"><span>웨이브</span><span class="rt"><span class="rf"></span></span><span class="num">₩10,900</span></li>
+              <li style="--i:3;--w:14.4%"><span>멜론</span><span class="rt"><span class="rf"></span></span><span class="num">₩7,900</span></li>
+              <li style="--i:4;--w:6%"><span>구름저장소</span><span class="rt"><span class="rf"></span></span><span class="num">₩3,300</span></li>
+            </ul>
+          </div>
+        </article>
+        <article class="tile">
+          <div class="t-top"><p class="t-label">지난달보다 늘어난 지출</p><span class="tag pro">Pro</span></div>
+          <p class="t-num num"><small>식비</small><span class="up" data-count="38" data-prefix="+" data-suffix="%">+38%</span></p>
+          <p class="t-sub">8월 ₩286,200 → 9월 ₩394,900</p>
+          <div class="viz">
+            <div class="cmp">
+              <div class="cmp-col"><div class="cmp-bar" style="--h:72.5%;--i:0"></div><p>8월</p><p class="num">₩286,200</p></div>
+              <div class="cmp-col"><div class="cmp-bar cur" style="--h:100%;--i:1"><span class="inc" style="--h2:27.5%"></span></div><p>9월</p><p class="num">₩394,900</p></div>
+            </div>
+          </div>
+        </article>
+        <article class="tile">
+          <div class="t-top"><p class="t-label">주말에 몰린 지출</p></div>
+          <p class="t-num num"><span data-count="41" data-suffix="%">41%</span></p>
+          <p class="t-sub">토·일 이틀에 한 달 지출의 41%를 썼어요</p>
+          <div class="viz">
+            <div class="week" aria-label="요일별 지출">
+              <div class="wk" style="--h:53.4%;--i:0"><span></span><em>월</em></div>
+              <div class="wk" style="--h:57.3%;--i:1"><span></span><em>화</em></div>
+              <div class="wk" style="--h:51.5%;--i:2"><span></span><em>수</em></div>
+              <div class="wk" style="--h:61.1%;--i:3"><span></span><em>목</em></div>
+              <div class="wk" style="--h:54.6%;--i:4"><span></span><em>금</em></div>
+              <div class="wk we" style="--h:100%;--i:5"><span></span><em>토</em></div>
+              <div class="wk we" style="--h:93.1%;--i:6"><span></span><em>일</em></div>
+            </div>
+          </div>
+        </article>
+        <article class="tile">
+          <div class="t-top"><p class="t-label">가장 많이 쓴 카테고리</p></div>
+          <p class="t-num num"><small>식비</small><span data-count="32" data-suffix="%">32%</span></p>
+          <p class="t-sub">9월 지출 ₩1,234,000 중 ₩394,900</p>
+          <div class="viz">
+            <div class="stack" aria-hidden="true">
+              <span style="--w:32%;--c:var(--c1);--i:0"></span><span style="--w:18%;--c:var(--c2);--i:1"></span><span style="--w:14%;--c:var(--c3);--i:2"></span><span style="--w:10%;--c:var(--c4);--i:3"></span><span style="--w:7%;--c:var(--c5);--i:4"></span><span style="--w:19%;--c:var(--c8);--i:5"></span>
+            </div>
+            <ul class="legend">
+              <li style="--c:var(--c1)">식비 32%</li><li style="--c:var(--c2)">마트·편의점 18%</li><li style="--c:var(--c3)">쇼핑 14%</li><li style="--c:var(--c4)">의료·건강 10%</li><li style="--c:var(--c5)">카페·간식 7%</li><li style="--c:var(--c8)">기타 19%</li>
+            </ul>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ③ AI 리포트 -->
+  <section class="block" id="report">
+    <div class="wrap">
+      <aside class="note" hidden><b>③ AI 리포트.</b> 실제 구조를 그대로 보여 줘요. 숫자는 서버가 집계하고, 문장은 AI가 숫자 없이 써요(숫자가 섞이면 다시 생성). "AI가 숫자를 지어내지 않는다"는 점이 AI 기능의 신뢰 포인트예요. 리포트 문장은 실제 데모 인사이트(<code>DEMO_INSIGHT</code>)와 같아요. 채팅에는 Pro 표시를 붙여 무료 범위를 오해하지 않게 했어요.</aside>
+      <p class="eyebrow">AI 리포트</p>
+      <h2 class="h2">숫자는 정확하게 계산하고, 설명은 AI가 쉽게 풀어 줘요</h2>
+      <p class="lead">첫 AI 리포트는 무료예요. Pro에서는 매달 리포트를 받고, 내 지출에 대해 채팅으로 물어볼 수 있어요.</p>
+      <div class="report-grid">
+        <article class="report-card">
+          <header class="rc-head"><h3>9월 AI 리포트</h3><span class="tag">예시</span></header>
+          <div class="blk"><span class="mk" aria-hidden="true">1</span>
+            <div class="rc-metrics">
+              <div><p class="m-l">9월 지출</p><p class="m-v num">₩1,234,000</p></div>
+              <div><p class="m-l">지난달보다</p><p class="m-v up num">+8%</p></div>
+              <div><p class="m-l">주말 비율</p><p class="m-v num">41%</p></div>
+            </div>
+          </div>
+          <div class="blk"><span class="mk" aria-hidden="true">2</span>
+            <p class="rc-headline">외식 지출이 늘고 작은 간식 지출은 줄었어요</p>
+            <ul><li>식사 관련 지출이 지난달보다 눈에 띄게 늘었어요.</li><li>카페 방문은 줄어 생활비 흐름이 한결 단순해졌어요.</li></ul>
+          </div>
+          <div class="blk"><span class="mk" aria-hidden="true">3</span>
+            <p class="rc-sub">실천 팁</p>
+            <ul><li>배달과 외식을 함께 살펴보면 줄이기 쉬운 지출을 찾을 수 있어요.</li><li>정기결제는 실제 사용 여부를 기준으로 가볍게 점검해 보세요.</li></ul>
+          </div>
+          <p class="rc-disc">지출 정리를 돕는 요약이에요. 투자·세무 조언이 아니에요.</p>
+          <div class="rc-fb"><button type="button" id="fb-up">도움이 됐어요</button><button type="button" id="fb-down">아쉬워요</button></div>
+        </article>
+        <div class="side">
+          <ol class="callouts">
+            <li><span class="mk">1</span><div><b>숫자는 FinSight가 직접 계산해요</b><p>올린 거래를 서버에서 더하고 나눠요. AI는 숫자를 만들지 않아요.</p></div></li>
+            <li><span class="mk">2</span><div><b>문장은 AI가 써요</b><p>숫자 없이 한 달 흐름만 설명해요. 숫자가 섞이면 다시 써요.</p></div></li>
+            <li><span class="mk">3</span><div><b>다음 달에 해 볼 일까지</b><p>줄이기 쉬운 지출과 점검할 정기결제를 짚어 줘요.</p></div></li>
+          </ol>
+          <div class="chat">
+            <div class="chat-head"><span>채팅</span><span class="tag pro">Pro</span></div>
+            <div class="msgs">
+              <p class="msg me">카페에 한 달에 얼마 써?</p>
+              <p class="msg ai">9월 카페·간식은 <strong class="num">₩86,400</strong>이에요. 나무카페가 18번으로 가장 많았어요.</p>
+            </div>
+            <div class="sugs"><span>지난달보다 늘어난 지출은 뭐야?</span><span>구독 결제만 모아서 보여줘</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ④ 3단계 -->
+  <section class="block alt" id="steps">
+    <div class="wrap">
+      <aside class="note" hidden><b>④ 시작하는 법.</b> 실제 절차라서 번호를 붙였어요. 2단계에 "최근 3개월"을 넣었어요(UX_GUIDE S3). 석 달 치를 올리면 첫 업로드부터 정기결제와 전월 비교가 채워져요. 카드사 로고는 쓰지 않고 이름만 적었어요(상표).</aside>
+      <p class="eyebrow">시작하는 법</p>
+      <h2 class="h2">3단계면 첫 대시보드를 볼 수 있어요</h2>
+      <ol class="flow">
+        <li>
+          <div class="f-icon"><span class="f-no">1</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8M12 16v4"/></svg></div>
+          <h3>카드사 홈페이지에서</h3>
+          <p>'이용내역 조회' 메뉴로 가요. 청구서가 아니라 <span class="key">이용내역</span>이에요.</p>
+        </li>
+        <li>
+          <div class="f-icon"><span class="f-no">2</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/><path d="M8 12h8M8 16h8M12 12v6"/></svg></div>
+          <h3>최근 3개월을 엑셀로 저장</h3>
+          <p>기간은 <span class="key">최근 3개월</span>로 골라요. 석 달 치면 정기결제까지 찾아 드려요.</p>
+        </li>
+        <li>
+          <div class="f-icon"><span class="f-no">3</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18"/><path d="M6 20v-6M11 20V8M16 20v-9M20 20V5"/></svg></div>
+          <h3>FinSight에 올리기</h3>
+          <p>AI가 열을 맞추고 카테고리를 나눠요. 같은 형식은 다음부터 확인 없이 올라가요.</p>
+        </li>
+      </ol>
+      <div class="issuers"><span>신한</span><span>삼성</span><span>현대</span><span>KB국민</span><span>롯데</span><span>하나</span><a href="#steps">카드사별 받는 법 →</a></div>
+      <p class="mobile-tip">휴대폰만 있다면 PC에서 열 링크를 복사해 카카오톡 '나와의 채팅'에 붙여 두세요.</p>
+    </div>
+  </section>
+
+  <!-- ⑤ 데이터 흐름 -->
+  <section class="block" id="trust">
+    <div class="wrap">
+      <aside class="note" hidden><b>⑤ 데이터 흐름.</b> 지금 랜딩의 "AI에는 가맹점명과 집계값만 보내요"와 동의 화면의 국외 이전 요약은 사실과 달라요. Pro 채팅은 거래 30건 이하(날짜·가맹점·금액)를, 열 맞추기는 가린 샘플 5행을 보내요(<code>src/server/actions/chat.ts:19</code>). 그래서 기능별로 정확히 적었어요. 법무 검토 때 동의 문구도 같이 고쳐야 해요.</aside>
+      <p class="eyebrow">데이터</p>
+      <h2 class="h2">AI에는 기능에 필요한 만큼만 보내요</h2>
+      <div class="dflow">
+        <div class="dnode">
+          <p class="dn-t">내 이용내역 파일</p>
+          <ul class="fields"><li>이용일</li><li>가맹점</li><li>금액</li><li class="sens">카드번호</li><li class="sens">승인번호</li></ul>
+        </div>
+        <div class="darrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="dnode">
+          <p class="dn-t">FinSight 서버 <span>서울 리전</span></p>
+          <ul class="proc">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>카드번호와 긴 숫자를 가려요</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>합계와 비율은 여기서 계산해요</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>원본 파일은 여기에만 있어요</li>
+          </ul>
+        </div>
+        <div class="darrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="dnode ai">
+          <p class="dn-t">AI에 보내는 것</p>
+          <table class="send">
+            <tr><th scope="row">열 맞추기</th><td>가린 샘플 5행</td></tr>
+            <tr><th scope="row">카테고리 분류</th><td>가맹점명</td></tr>
+            <tr><th scope="row">AI 리포트</th><td>합계·비율 같은 집계값</td></tr>
+            <tr><th scope="row">채팅 <span class="tag pro">Pro</span></th><td>질문에 필요한 거래 30건 이하</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="never">
+        <p>AI에 보내지 않아요</p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>카드번호</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>이름·이메일</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>원본 파일</li>
+        </ul>
+      </div>
+      <div class="timeline">
+        <div class="tl-bar"><span class="tl-start">올린 날</span><span class="tl-end">90일 · 원본 자동 삭제</span></div>
+        <p>그 전에도 언제든 업로드별 삭제, 전체 삭제, 탈퇴를 할 수 있어요.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑥ 요금 -->
+  <section class="block alt" id="pricing">
+    <div class="wrap">
+      <aside class="note" hidden><b>⑥ 요금.</b> Free 쪽에 "첫 AI 리포트 1회 무료"를 강조해 가입 동기로 써요. 해외결제 카드 조건은 결제 전에 보이게 했어요.</aside>
+      <p class="eyebrow">요금</p>
+      <h2 class="h2">지출 정리는 무료, 더 깊은 분석은 Pro</h2>
+      <div class="plans">
+        <div class="plan">
+          <p class="p-name">Free</p>
+          <p class="p-price num">₩0</p>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>업로드와 AI 자동 분류</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>월별 대시보드</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>정기결제 건수와 합계</li>
+            <li class="hl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>첫 AI 리포트 1회 무료</li>
+          </ul>
+        </div>
+        <div class="plan pro">
+          <p class="p-name">Pro</p>
+          <p class="p-price num">₩6,900<span>/월</span></p>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>매달 AI 리포트</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>내 지출에 대해 채팅으로 묻기</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>여러 달 추이와 전월 비교</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>정기결제 전체 목록</li>
+          </ul>
+          <p class="p-note">해외결제가 되는 카드(VISA·Mastercard)가 필요해요. 언제든 해지할 수 있어요.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑦ FAQ -->
+  <section class="block" id="faq">
+    <div class="wrap">
+      <p class="eyebrow">자주 묻는 질문</p>
+      <div class="faq-list">
+        <details><summary>어떤 카드사를 지원하나요?</summary><p>신한·삼성·현대·KB국민·롯데·하나 홈페이지의 이용내역 CSV·엑셀을 지원해요. 형식이 비슷하면 다른 카드사도 대부분 돼요.</p></details>
+        <details><summary>AI가 분류를 틀리면요?</summary><p>거래를 눌러 카테고리를 바꿀 수 있어요. "같은 가맹점 모두"를 고르면 다음부터도 그 카테고리로 정리돼요.</p></details>
+        <details><summary>데이터를 직접 삭제할 수 있나요?</summary><p>설정에서 업로드별 삭제, 전체 삭제, 탈퇴를 할 수 있어요. 원본은 90일 뒤 자동으로 삭제돼요.</p></details>
+        <details><summary>투자 조언도 해 주나요?</summary><p>아니요. 지출 정리를 돕는 요약이고 투자·세무 조언은 하지 않아요.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑧ 마지막 CTA -->
+  <section class="final" id="final">
+    <div class="wrap">
+      <aside class="note" hidden><b>⑧ 마지막 CTA.</b> 랜딩 예외 규칙의 짙은 초록 섹션은 이것 하나예요. 지금 랜딩은 FAQ에서 끝나 막다른 끝이 되는데, 그걸 없애요. 이벤트: <code>landing_cta {section: "final"}</code>.</aside>
+      <h2>이번 달 지출, 파일 하나로 정리해 보세요</h2>
+      <p class="fl">연동 없이 카드사에서 받은 이용내역 파일만 있으면 돼요. 첫 AI 리포트는 무료예요.</p>
+      <div class="cta-row"><a class="btn btn-invert" href="#hero">무료로 시작</a><a class="btn btn-ghost" href="#insights">예시 먼저 보기</a></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="wrap"><span>© 2026 FinSight</span><span>개인정보 처리방침</span><span>이용약관</span><span>환불 정책</span></div>
+  </footer>
+
+</div>
+</div>
+</div>
+
+<script>
+(function () {
+  var reduce = false;
+  try { reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+
+  var notesBtn = document.getElementById("toggle-notes");
+  notesBtn.addEventListener("click", function () {
+    var on = notesBtn.getAttribute("aria-pressed") !== "true";
+    notesBtn.setAttribute("aria-pressed", String(on));
+    notesBtn.textContent = on ? "설계 메모 숨기기" : "설계 메모 보기";
+    document.querySelectorAll(".note").forEach(function (n) { n.hidden = !on; });
+  });
+
+  var stage = document.getElementById("stage");
+  function replay() {
+    stage.classList.remove("play");
+    void stage.offsetWidth;
+    stage.classList.add("play");
+  }
+  document.getElementById("replay").addEventListener("click", replay);
+
+  var frame = document.getElementById("frame");
+  var wd = document.getElementById("w-desktop");
+  var wm = document.getElementById("w-mobile");
+  function setWidth(mobile) {
+    frame.classList.toggle("mobile", mobile);
+    wd.setAttribute("aria-pressed", String(!mobile));
+    wm.setAttribute("aria-pressed", String(mobile));
+    replay();
+  }
+  wd.addEventListener("click", function () { setWidth(false); });
+  wm.addEventListener("click", function () { setWidth(true); });
+
+  if (reduce || !("IntersectionObserver" in window)) return;
+
+  function fmt(el, n) {
+    return (el.dataset.prefix || "") + Math.round(n).toLocaleString("ko-KR") + (el.dataset.suffix || "");
+  }
+  function countUp(el) {
+    var target = Number(el.dataset.count), start = performance.now(), dur = 750;
+    function step(t) {
+      var p = Math.min(1, (t - start) / dur), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(el, target * e);
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  // 타일은 처음부터 완성된 모습이다. 화면에 막 들어올 때(아직 막대가 안 보일 때) 한 번 다시 채운다.
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (!entry.isIntersecting) return;
+      var tile = entry.target;
+      tile.classList.add("in");
+      tile.querySelectorAll("[data-count]").forEach(countUp);
+      io.unobserve(tile);
+    });
+  }, { threshold: 0 });
+  document.querySelectorAll(".tile").forEach(function (tile) {
+    if (tile.getBoundingClientRect().top > window.innerHeight) io.observe(tile);
+  });
+})();
+</script>

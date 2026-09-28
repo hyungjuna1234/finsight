@@ -15,7 +15,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## 기술 스택
 - Next.js 16.3 App Router (`src/`), React 19, TypeScript strict + `noUncheckedIndexedAccess`
-- Tailwind CSS v4 (토큰은 `src/app/globals.css`, 규칙은 `docs/UI_GUIDE.md`), Pretendard 로컬 폰트
+- Tailwind CSS v4 (토큰은 `src/app/globals.css`, 규칙은 `docs/UI_GUIDE.md`, 화면 흐름·문구는 `docs/UX_GUIDE.md`), Pretendard 로컬 폰트
 - Supabase: Auth(카카오·구글) · Postgres(RLS) · Storage, 서울 리전. `@supabase/ssr` httpOnly 쿠키
 - Claude: `@anthropic-ai/sdk` — 매핑·분류 `claude-haiku-4-5`, 인사이트·채팅 `claude-sonnet-5`
 - 결제: Polar (`@polar-sh/sdk` alpha, `services/billing`에 격리)

@@ -39,7 +39,7 @@ src/
 │  ├─ (app)/ layout.tsx · dashboard/ · transactions/ · upload/ · upload/[id]/ · trends/ · recurring/ · insights/ · chat/ · settings/ · billing/success/
 │  └─ api/ consents/ · uploads/ · uploads/[id]/{analyze,confirm,recategorize}/ · transactions/[id]/ · insights/ · chat/
 │          billing/{checkout,portal,confirm}/ · webhooks/polar/ · cron/cleanup/ · account/{delete-data,delete}/
-├─ components/ ui/(api-fetch.ts 포함) · dashboard/ · upload/ · pro/ · chat/ · marketing/
+├─ components/ ui/(api-fetch.ts 포함) · dashboard/ · upload/ · pro/ · chat/ · marketing/(landing/ 포함)
 ├─ lib/
 │  ├─ domain/    categories.ts · money.ts · month.ts · errors.ts · result.ts · redirect.ts · types.ts
 │  ├─ ingest/    sniff.ts · decode.ts · table.ts · mask.ts · mapping.ts · parse.ts · identity.ts · merchant.ts · rules.ts
