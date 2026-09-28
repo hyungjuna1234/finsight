@@ -4,7 +4,7 @@ import { allFixtures } from "@/test/fixtures/statements";
 
 import { decodeFile } from "./decode";
 import { sniffFile } from "./sniff";
-import { detectTable, isSummaryRow, tableAtHeader, type TableGuess } from "./table";
+import { detectTable, isSummaryRow, periodHintFromText, tableAtHeader, type TableGuess } from "./table";
 
 describe("detectTable", () => {
   for (const fixture of allFixtures()) {
@@ -63,5 +63,12 @@ describe("table helpers", () => {
     expect(tableAtHeader(base, 1)?.dataRows).toEqual([["2026-01-01", "가게", ""]]);
     expect(tableAtHeader(base, -1)).toBeNull();
     expect(tableAtHeader(base, 3)).toBeNull();
+  });
+
+  it("reads the statement period from free text", () => {
+    expect(periodHintFromText("이용기간 : [일시불/할부] 2026.08.10 ~ 2026.09.09 [현금서비스] 2026.07.25 ~ 2026.08.24")).toEqual({ from: "2026-08-10", to: "2026-09-09" });
+    expect(periodHintFromText("2026년 8월 1일 ~ 2026년 8월 31일")).toEqual({ from: "2026-08-01", to: "2026-08-31" });
+    expect(periodHintFromText("2026.09.10 ~ 2026.08.01")).toBeNull();
+    expect(periodHintFromText("결제일 2026.09.23")).toBeNull();
   });
 });

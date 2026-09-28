@@ -51,6 +51,7 @@ describe("TROUBLESHOOTING", () => {
     expect(guideHrefForError("ENCRYPTED_FILE")).toBe(
       "/guide#trouble-encrypted-file",
     );
+    expect(guideHrefForError("PDF_NO_TRANSACTIONS")).toBe("/guide#trouble-pdf-no-transactions");
     expect(guideHrefForError("EMPTY_FILE")).toBeNull();
     expect(guideHrefForError("NOT_AN_ERROR_CODE")).toBeNull();
   });

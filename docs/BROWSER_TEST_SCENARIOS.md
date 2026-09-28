@@ -38,6 +38,16 @@ const { allFixtures, hyundaiForeignPair } = await jiti.import("./src/test/fixtur
 const out = process.env.OUT; mkdirSync(out, { recursive: true });
 for (const f of [...allFixtures({ heavy: true }), ...hyundaiForeignPair()]) writeFileSync(out + "/" + f.filename, f.bytes);
 '
+# 합성 PDF: 암호(비밀번호 0000) 명세서와 글자 없는 PDF
+node --input-type=module -e '
+import { createJiti } from "jiti";
+import { writeFileSync } from "node:fs";
+const jiti = createJiti(process.cwd() + "/", { alias: { "@": process.cwd() + "/src" } });
+const { syntheticPdf } = await jiti.import("./src/test/fixtures/pdf.ts");
+const rows = [["08/20 STARBUCKS", "12,900"], ["08/21 GS25", "30,000"]].flatMap(([text, amount], i) => [{ text, x: 36, y: 770 - i * 13 }, { text: amount, x: 250, y: 770 - i * 13 }]);
+writeFileSync("/tmp/finsight-fixtures/명세서_암호.pdf", syntheticPdf([[{ text: "2026.08.10 ~ 2026.09.09", x: 200, y: 815 }, ...rows]], { password: "0000" }));
+writeFileSync("/tmp/finsight-fixtures/스캔.pdf", syntheticPdf([[]]));
+'
 # 10MB 초과 파일(클라이언트 검증용)
 mkfile -n 11m /tmp/finsight-fixtures/큰파일.csv
 ```
@@ -175,8 +185,10 @@ APP-1을 마친 계정으로 `/upload`에서 하나씩 올린다. 문구는 `src
 | 파일 | 기대 문구 |
 |---|---|
 | `큰파일.csv` | 업로드 전에 10MB 초과 안내(서버 코드 FILE_TOO_LARGE: "파일이 10MB보다 커요. 더 작은 파일을 올려 주세요.") |
-| 실제 `.pdf`·`.png` | 파일 선택 단계에서 거절(CSV·xls·xlsx만) |
-| `card.xls`(PDF 내용) | "지원하지 않는 파일 형식이에요. CSV, XLS, XLSX 파일을 올려 주세요." |
+| 실제 `.png` | 파일 선택 단계에서 거절(CSV·xls·xlsx·pdf만) |
+| `card.xls`(PDF 내용) | "지원하지 않는 파일 형식이에요. CSV, XLS, XLSX, PDF 파일을 올려 주세요." |
+| `명세서_암호.pdf` | 단계가 "비밀번호 필요"로 멈추고 PDF 비밀번호 칸이 보인다. `1234` → "비밀번호가 맞지 않아요. 다시 입력해 주세요." → `0000` → 매핑 확인(날짜·가맹점·금액=열 3 제안) → 2건 추가. 새로고침 후 `/upload/[id]`로 돌아오면 비밀번호를 다시 묻는다 |
+| `스캔.pdf`(글자 없음) | "PDF에서 이용내역을 찾지 못했어요. …" + 가이드 링크 |
 | `신한.csv` 다시 | "이미 올린 파일이에요." + [보기] |
 | `암호.xlsx` | "암호가 걸린 파일이에요. 엑셀에서 열어 다른 이름으로 저장한 뒤 올려 주세요." |
 | `empty.csv` | "파일에 내용이 없어요. 카드 이용내역이 있는 파일을 올려 주세요." |

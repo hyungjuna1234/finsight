@@ -11,13 +11,14 @@ import type { ColumnMapping } from "@/lib/ingest/mapping";
 import { CardField } from "./card-field";
 import { FilePicker } from "./file-picker";
 import { MappingReview } from "./mapping-review";
+import { PasswordPrompt } from "./password-prompt";
 import { confirmFile, putFile, sha256Hex, startFile, type FileStage, type PipelineDeps } from "./upload-pipeline";
 import { UploadError } from "./upload-error";
 import { UploadResult } from "./upload-result";
 import { IssuerPicker } from "./issuer-picker";
 
-interface Item { key: number; file: File; stage: FileStage; uploadId?: string; analysis?: AnalyzeResponse; result?: ConfirmResponse; error?: ApiError; recategorizing?: boolean }
-const STAGE: Record<FileStage, string> = { waiting: "대기 중", hashing: "파일 확인 중", uploading: "업로드 중", analyzing: "열 분석 중", review: "열 확인 필요", confirming: "거래 분석 중", done: "완료", error: "처리 실패" };
+interface Item { key: number; file: File; stage: FileStage; uploadId?: string; analysis?: AnalyzeResponse; password?: string; passwordWrong?: boolean; result?: ConfirmResponse; error?: ApiError; recategorizing?: boolean }
+const STAGE: Record<FileStage, string> = { waiting: "대기 중", hashing: "파일 확인 중", uploading: "업로드 중", analyzing: "열 분석 중", password: "비밀번호 필요", review: "열 확인 필요", confirming: "거래 분석 중", done: "완료", error: "처리 실패" };
 const deps: PipelineDeps = { api: apiFetch, put: putFile, sha256Hex };
 function asApiError(error: unknown): ApiError { return error instanceof ApiError ? error : new ApiError("INTERNAL", 500, ""); }
 
@@ -37,9 +38,9 @@ export function UploadFlow({ cards, hasUploads, guides }: { cards: { id: string;
     trackEvent("upload_error", { code: apiError.code });
     return apiError;
   }
-  async function finish(key: number, uploadId: string, mapping: ColumnMapping) {
+  async function finish(key: number, uploadId: string, mapping: ColumnMapping, password?: string) {
     update(key, { stage: "confirming" });
-    try { const result = await confirmFile(uploadId, mapping, card!, deps); update(key, { stage: "done", result }); trackDone(true); }
+    try { const result = await confirmFile(uploadId, mapping, card!, deps, password); update(key, { stage: "done", result, password: undefined }); trackDone(true); }
     catch (error) { update(key, { stage: "error", error: trackError(error) }); }
   }
   async function run(files: File[]) {
@@ -48,9 +49,12 @@ export function UploadFlow({ cards, hasUploads, guides }: { cards: { id: string;
     const queued = files.map((file) => ({ key: nextKey.current++, file, stage: "waiting" as const })); setItems((all) => [...all, ...queued]);
     for (const item of queued) {
       try {
-        const started = await startFile(item.file, deps, (stage) => update(item.key, { stage }));
-        update(item.key, { uploadId: started.uploadId, analysis: started.analysis });
-        if (started.analysis.autoConfirm && started.analysis.mapping) await finish(item.key, started.uploadId, started.analysis.mapping);
+        const started = await startFile(item.file, deps, (stage) => update(item.key, { stage }), (wrong) => {
+          update(item.key, { passwordWrong: wrong });
+          return new Promise<string>((resolve) => { passwordResolvers.current.set(item.key, resolve); });
+        });
+        update(item.key, { uploadId: started.uploadId, analysis: started.analysis, password: started.password });
+        if (started.analysis.autoConfirm && started.analysis.mapping) await finish(item.key, started.uploadId, started.analysis.mapping, started.password);
         else {
           update(item.key, { stage: "review" });
           await new Promise<void>((resolve) => { reviewResolvers.current.set(item.key, resolve); });
@@ -60,9 +64,11 @@ export function UploadFlow({ cards, hasUploads, guides }: { cards: { id: string;
     setRunning(false);
   }
   const reviewResolvers = useRef(new Map<number, () => void>());
+  const passwordResolvers = useRef(new Map<number, (password: string) => void>());
+  function passwordSubmit(key: number, password: string) { passwordResolvers.current.get(key)?.(password); passwordResolvers.current.delete(key); }
   async function reviewSubmit(item: Item, mapping: ColumnMapping, selectedCard: CardChoice) {
     setCard(selectedCard); update(item.key, { stage: "confirming" });
-    try { const result = await confirmFile(item.uploadId!, mapping, selectedCard, deps); update(item.key, { stage: "done", result }); trackDone(false); }
+    try { const result = await confirmFile(item.uploadId!, mapping, selectedCard, deps, item.password); update(item.key, { stage: "done", result, password: undefined }); trackDone(false); }
     catch (error) { update(item.key, { stage: "error", error: trackError(error) }); }
     reviewResolvers.current.get(item.key)?.(); reviewResolvers.current.delete(item.key);
   }
@@ -87,6 +93,7 @@ export function UploadFlow({ cards, hasUploads, guides }: { cards: { id: string;
       <FilePicker onFiles={run} disabled={running || !validCard} />
     </section>
     <div className="space-y-4">{items.map((item) => <section key={item.key} className="border-t border-line pt-4"><div className="mb-3 flex items-center justify-between gap-3"><h2 className="truncate text-sm font-medium text-ink">{item.file.name}</h2><span className="shrink-0 text-sm text-muted">{STAGE[item.stage]}</span></div>
+      {item.stage === "password" ? <PasswordPrompt wrong={item.passwordWrong ?? false} onSubmit={(password) => passwordSubmit(item.key, password)} /> : null}
       {item.stage === "review" && item.analysis ? <MappingReview preview={item.analysis.preview} mapping={item.analysis.mapping} cards={cards} defaultCard={card ?? undefined} submitting={false} onSubmit={(mapping, selectedCard) => reviewSubmit(item, mapping, selectedCard)} /> : null}
       {item.result ? <UploadResult result={item.result} recategorizing={item.recategorizing} onRecategorize={() => recategorize(item)} /> : null}
       {item.error ? <UploadError error={item.error} /> : null}

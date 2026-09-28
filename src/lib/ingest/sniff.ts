@@ -2,7 +2,7 @@ import type { AcceptedExtension } from "@/lib/domain/upload";
 import { fileExtension } from "@/lib/domain/upload";
 import { err, ok, type Result } from "@/lib/domain/result";
 
-export type SniffKind = "xlsx" | "xls" | "html" | "xml" | "text";
+export type SniffKind = "xlsx" | "xls" | "html" | "xml" | "text" | "pdf";
 export type TextEncoding = "utf-8" | "utf-16le" | "utf-16be";
 
 export interface Sniff {
@@ -86,8 +86,10 @@ export function sniffFile(
   if (!extension) return err("UNSUPPORTED_FORMAT");
   if (bytes.length === 0 || onlyBomAndWhitespace(bytes)) return err("EMPTY_FILE");
 
+  const pdf = startsWith(bytes, [0x25, 0x50, 0x44, 0x46, 0x2d]);
+  if (extension === "pdf") return pdf ? ok({ kind: "pdf", extension, encoding: null }) : err("UNSUPPORTED_FORMAT");
   if (
-    startsWith(bytes, [0x25, 0x50, 0x44, 0x46]) ||
+    pdf ||
     startsWith(bytes, [0x89, 0x50, 0x4e, 0x47]) ||
     startsWith(bytes, [0xff, 0xd8, 0xff]) ||
     startsWith(bytes, [0x47, 0x49, 0x46, 0x38]) ||

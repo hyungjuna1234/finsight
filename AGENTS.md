@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-한국 개인 사용자가 **카드 이용내역 파일(CSV/xls/xlsx)**을 올리면 Claude가 분류·요약해 대시보드로 보여주는 SaaS의 MVP.
+한국 개인 사용자가 **카드 이용내역 파일(CSV/xls/xlsx)이나 PDF 명세서**를 올리면 Claude가 분류·요약해 대시보드로 보여주는 SaaS의 MVP.
 전체 계획은 루트의 `plan.md`, 세부 설계는 `docs/`에 있다.
 
 ## 기술 스택
@@ -19,7 +19,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Supabase: Auth(카카오·구글) · Postgres(RLS) · Storage, 서울 리전. `@supabase/ssr` httpOnly 쿠키
 - Claude: `@anthropic-ai/sdk` — 매핑·분류 `claude-haiku-4-5`, 인사이트·채팅 `claude-sonnet-5`
 - 결제: Polar (`@polar-sh/sdk` alpha, `services/billing`에 격리)
-- 파싱: SheetJS 0.20.3(CDN tarball) + `iconv-lite`(CP949) · 차트: Recharts 3 · 검증: zod 4
+- 파싱: SheetJS 0.20.3(CDN tarball) + `iconv-lite`(CP949) + `unpdf`(PDF 명세서, pdf.js) · 차트: Recharts 3 · 검증: zod 4
 - 테스트: Vitest 5 (`*.test.ts` → node, `*.test.tsx` → jsdom), PGlite(RLS), Playwright(e2e)
 
 **Next.js 16은 학습 데이터와 다르다.** `middleware.ts` 대신 `proxy.ts`, `next lint` 없음 등. Next API를 쓰기 전에 `node_modules/next/dist/docs/`의 관련 문서를 읽어라.

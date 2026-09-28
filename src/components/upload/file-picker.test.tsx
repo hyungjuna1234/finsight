@@ -10,9 +10,10 @@ it("모바일용 accept를 제공하고 잘못된 파일은 제외해 안내한�
   expect(input).toHaveAttribute("accept", ACCEPT_ATTR);
   const good = new File(["ok"], "ok.csv", { type: "text/csv" });
   const large = new File([new Uint8Array(11 * 1024 * 1024)], "large.xlsx");
-  const pdf = new File(["pdf"], "bad.pdf", { type: "application/pdf" });
-  fireEvent.change(input, { target: { files: [good, large, pdf] } });
-  expect(onFiles).toHaveBeenCalledWith([good]);
+  const pdf = new File(["%PDF"], "statement.pdf", { type: "application/pdf" });
+  const image = new File(["png"], "bad.png", { type: "image/png" });
+  fireEvent.change(input, { target: { files: [good, large, pdf, image] } });
+  expect(onFiles).toHaveBeenCalledWith([good, pdf]);
   expect(screen.getByText(/large\.xlsx.*10MB/)).toBeInTheDocument();
-  expect(screen.getByText(/bad\.pdf.*지원하지/)).toBeInTheDocument();
+  expect(screen.getByText(/bad\.png.*지원하지/)).toBeInTheDocument();
 });

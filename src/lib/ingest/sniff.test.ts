@@ -1,3 +1,4 @@
+import { syntheticPdf } from "@/test/fixtures/pdf";
 import { allFixtures } from "@/test/fixtures/statements";
 import { describe, expect, it } from "vitest";
 
@@ -26,6 +27,17 @@ describe("sniffFile", () => {
       ok: false,
       error: "UNSUPPORTED_FORMAT",
     });
+  });
+
+  it("detects a PDF by its signature when the extension is pdf", () => {
+    expect(sniffFile(syntheticPdf([[{ text: "08/01 SHOP", x: 30, y: 700 }]]), "statement.PDF")).toEqual({
+      ok: true,
+      value: { kind: "pdf", extension: "pdf", encoding: null },
+    });
+  });
+
+  it("rejects PDF content under a spreadsheet extension", () => {
+    expect(sniffFile(syntheticPdf([[]]), "card.xlsx")).toEqual({ ok: false, error: "UNSUPPORTED_FORMAT" });
   });
 
   it("treats BOM and whitespace only as empty", () => {

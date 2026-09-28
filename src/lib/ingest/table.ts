@@ -59,8 +59,7 @@ function iso(year: string, month: string, day: string): IsoDate | null {
   return isIsoDate(value) ? value : null;
 }
 
-function periodHint(rows: string[][]): { from: IsoDate; to: IsoDate } | null {
-  const text = rows.slice(0, 30).flat().join(" ");
+export function periodHintFromText(text: string): { from: IsoDate; to: IsoDate } | null {
   const numeric = /(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})\s*(?:~|-)\s*(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})/.exec(text);
   const korean = /(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*(?:~|-)\s*(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/.exec(text);
   const match = numeric ?? korean;
@@ -68,6 +67,10 @@ function periodHint(rows: string[][]): { from: IsoDate; to: IsoDate } | null {
   const from = iso(match[1]!, match[2]!, match[3]!);
   const to = iso(match[4]!, match[5]!, match[6]!);
   return from && to && from <= to ? { from, to } : null;
+}
+
+function periodHint(rows: string[][]): { from: IsoDate; to: IsoDate } | null {
+  return periodHintFromText(rows.slice(0, 30).flat().join(" "));
 }
 
 export function detectTable(sheets: Sheet[]): Result<TableGuess, "HEADER_NOT_FOUND" | "BILLING_STATEMENT" | "BANK_STATEMENT"> {

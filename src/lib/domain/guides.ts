@@ -23,7 +23,7 @@ function issuerGuide(id: IssuerId, name: string): IssuerGuide {
     name,
     steps: [
       `${name} 홈페이지에 로그인해요.`,
-      "'이용내역 조회' 메뉴로 가요. '청구서(명세서)'가 아니라 '이용내역'이에요.",
+      "'이용내역 조회' 메뉴로 가요. '청구서'가 아니라 '이용내역'이에요.",
       "기간은 최근 3개월로 골라 조회해요.",
       "'엑셀 저장' 또는 '파일 다운로드'를 눌러요. 암호를 걸었다면 풀고 저장해요.",
     ],
@@ -74,8 +74,13 @@ export const TROUBLESHOOTING: readonly TroubleItem[] = [
   },
   {
     code: "UNSUPPORTED_FORMAT",
-    title: "PDF나 이미지 파일이에요",
-    fix: "CSV·xls·xlsx 파일로 받아 주세요.",
+    title: "이미지나 지원하지 않는 형식이에요",
+    fix: "CSV·xls·xlsx 파일이나 카드사 PDF 명세서로 받아 주세요.",
+  },
+  {
+    code: "PDF_NO_TRANSACTIONS",
+    title: "PDF에서 이용내역을 못 찾았어요",
+    fix: "스캔하거나 사진으로 만든 PDF는 글자를 읽을 수 없어요. 카드사 홈페이지에서 이용내역을 엑셀로 받아 주세요.",
   },
 ];
 

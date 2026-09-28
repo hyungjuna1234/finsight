@@ -92,3 +92,24 @@ it("확정 실패는 에러만 기록한다", async () => {
   expect(trackEvent).toHaveBeenCalledOnce();
   expect(trackEvent).toHaveBeenCalledWith("upload_error", { code: "NETWORK" });
 });
+
+it("암호 PDF는 비밀번호를 받아 같은 파일을 이어서 처리하고 확정에도 보낸다", async () => {
+  const user = userEvent.setup();
+  startMock.mockImplementation(async (_file: File, _deps: unknown, onStage: (stage: string) => void, askPassword: (wrong: boolean) => Promise<string>) => {
+    onStage("password"); await askPassword(false);
+    onStage("password"); const password = await askPassword(true);
+    return { uploadId: "u1", analysis, password };
+  });
+  render(<UploadFlow cards={[]} hasUploads guides={ISSUER_GUIDES} />);
+  await user.type(screen.getByLabelText("새 카드 이름"), "신한");
+  await user.upload(screen.getByLabelText("카드 이용내역 파일 선택"), [new File(["%PDF"], "명세서.pdf", { type: "application/pdf" })]);
+  expect(await screen.findByText("비밀번호 필요")).toBeInTheDocument();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  await user.type(screen.getByLabelText("PDF 비밀번호"), "111111");
+  await user.click(screen.getByRole("button", { name: "열기" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("비밀번호가 맞지 않아요");
+  await user.type(screen.getByLabelText("PDF 비밀번호"), "900101");
+  await user.click(screen.getByRole("button", { name: "열기" }));
+  await screen.findByText(/1건 추가/);
+  expect(confirmMock).toHaveBeenCalledWith("u1", analysis.mapping, { name: "신한" }, expect.anything(), "900101");
+});

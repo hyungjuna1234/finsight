@@ -23,10 +23,12 @@ MVP 범위의 사용자 흐름 4개와 예외 처리. 화면 문구는 한국어
 ## ② 업로드 (카드 이용내역)
 ```
 /upload 파일 선택 (여러 개면 하나씩 차례로)
-  ├ 클라이언트 검증 실패(csv·xls·xlsx 아님, 10MB 초과) → 안내
+  ├ 클라이언트 검증 실패(csv·xls·xlsx·pdf 아님, 10MB 초과) → 안내
   ▼
 POST /api/uploads → 브라우저가 signed URL로 PUT → POST /api/uploads/:id/analyze
   ├ 같은 파일 ────────────────▶ "이미 올린 파일이에요 [보기]"
+  ├ 암호 PDF ─────────────────▶ "비밀번호 필요": PDF 비밀번호 입력 → 같은 업로드로 analyze 다시(틀리면 "비밀번호가 맞지 않아요", 다시 입력)
+  ├ 글자 없는(스캔) PDF ────────▶ "PDF에서 이용내역을 찾지 못했어요 … 엑셀로 받아 올려 주세요 [가이드]"
   ├ 암호 · 1만 행 초과 · 깨진 파일 ─▶ 원인별 안내 ("엑셀에서 열어 다른 이름으로 저장한 뒤 올려 주세요" 등)
   ├ 청구서 · 은행 파일 ─────────▶ "카드사 홈페이지에서 '이용내역'을 받아 주세요 [가이드]"
   ▼
@@ -68,7 +70,9 @@ POST /api/uploads/:id/confirm (파싱 · 중복 제외 · 분류, 진행 표시)
 - 필수 동의 없음 → 모든 앱 API가 `CONSENT_REQUIRED`(403) → 동의 화면.
 
 **파일**
-- 거부: PDF·이미지(`UNSUPPORTED_FORMAT`), 암호(`ENCRYPTED_FILE`), 빈 파일(`EMPTY_FILE`), 청구서(`BILLING_STATEMENT`), 은행(`BANK_STATEMENT`), 1만 행 초과(`TOO_MANY_ROWS`), 시트 20개 초과·셀 과다(`FILE_TOO_COMPLEX`), 10MB 초과(`FILE_TOO_LARGE`).
+- 거부: 이미지·기타 형식(`UNSUPPORTED_FORMAT`), 암호 엑셀(`ENCRYPTED_FILE`), 스캔 PDF(`PDF_NO_TRANSACTIONS`), 빈 파일(`EMPTY_FILE`), 청구서(`BILLING_STATEMENT`), 은행(`BANK_STATEMENT`), 1만 행 초과(`TOO_MANY_ROWS`), 시트 20개 초과·셀 과다(`FILE_TOO_COMPLEX`), 10MB 초과(`FILE_TOO_LARGE`).
+- 암호 PDF: 비밀번호를 물어 같은 업로드를 이어 간다(`PDF_PASSWORD_REQUIRED`·`PDF_PASSWORD_WRONG`, 실패로 기록하지 않음). 비밀번호는 저장하지 않으므로 `/upload/[id]`로 돌아오면 다시 묻는다.
+- PDF 명세서: 날짜로 시작하는 줄만 거래로 읽고 합계 줄에서 멈춘다. 금액은 이용금액 열(할부는 총액), 연도 없는 날짜는 명세서의 이용기간으로 채운다. 처음엔 매핑 확인 화면을 거친다.
 - 정규화: HTML·XML 형식 xls, CP949·UTF-16·NFD 한글, 제목행·합계행, 시트 여러 개(행이 가장 많은 표), 연도 없는 날짜(파일 기간으로 추정).
 - 건너뜀: 합계·빈 행, 0원, 날짜 이상(2000년 이전, 오늘+31일 이후), 금액 이상.
 - 중복: 같은 파일(sha256) 거부, 기간 겹침은 `identity_key`로 제외, 같은 날 같은 가맹점·금액 2건은 승인번호나 순번으로 둘 다 보존.

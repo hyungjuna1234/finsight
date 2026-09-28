@@ -4,7 +4,7 @@ import { ERROR_MESSAGES, type ErrorCode } from "@/lib/domain/errors";
 import { guideHrefForError } from "@/lib/domain/guides";
 import { redirectPathForError, type ApiError } from "@/components/ui/api-fetch";
 
-const GUIDE_CODES = new Set<ErrorCode>(["FILE_TOO_LARGE", "UNSUPPORTED_FORMAT", "ENCRYPTED_FILE", "EMPTY_FILE", "ENCODING_ERROR", "CORRUPT_FILE", "TOO_MANY_ROWS", "FILE_TOO_COMPLEX", "HEADER_NOT_FOUND", "BILLING_STATEMENT", "BANK_STATEMENT", "MAPPING_INVALID", "NO_DATA"]);
+const GUIDE_CODES = new Set<ErrorCode>(["FILE_TOO_LARGE", "UNSUPPORTED_FORMAT", "ENCRYPTED_FILE", "EMPTY_FILE", "ENCODING_ERROR", "CORRUPT_FILE", "TOO_MANY_ROWS", "FILE_TOO_COMPLEX", "HEADER_NOT_FOUND", "PDF_NO_TRANSACTIONS", "BILLING_STATEMENT", "BANK_STATEMENT", "MAPPING_INVALID", "NO_DATA"]);
 export function UploadError({ error, onRetry }: { error: ApiError; onRetry?(): void }) {
   const redirect = redirectPathForError(error.code, "/upload");
   const message = error.code === "NETWORK" ? "네트워크 연결을 확인해 주세요." : ERROR_MESSAGES[error.code];

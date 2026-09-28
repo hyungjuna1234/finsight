@@ -13,6 +13,8 @@ import { identityKey } from "@/lib/ingest/identity";
 import { columnMappingSchema, headerSignature, validateMapping, type ColumnMapping } from "@/lib/ingest/mapping";
 import { maskSamples } from "@/lib/ingest/mask";
 import { parseRows } from "@/lib/ingest/parse";
+import { readPdf } from "@/lib/ingest/pdf";
+import { pdfTable, suggestPdfMapping } from "@/lib/ingest/pdf-table";
 import { sniffFile } from "@/lib/ingest/sniff";
 import { detectTable, isSummaryRow, tableAtHeader, type TableGuess } from "@/lib/ingest/table";
 import { adminStorage, storagePathFor } from "@/server/admin";
@@ -24,7 +26,10 @@ import { createServerSupabase } from "@/services/supabase/server";
 import type { Database, Json } from "@/types/database";
 
 export const createUploadBody = z.object({ filename: z.string().min(1).max(255), size: z.number().int().positive(), sha256: z.string().regex(/^[0-9a-f]{64}$/) }).strict();
-export const confirmUploadBody = z.object({ mapping: columnMappingSchema, card: z.union([z.object({ id: z.uuid() }).strict(), z.object({ name: z.string().trim().min(1).max(30) }).strict()]) }).strict();
+// PDF 비밀번호는 요청 body로만 받아 메모리에서 쓰고 버린다(DB·Storage·로그에 남기지 않는다). confirm도 원본을 다시 읽으므로 한 번 더 받는다.
+const pdfPassword = z.string().min(1).max(128);
+export const analyzeUploadBody = z.object({ password: pdfPassword.optional() }).strict();
+export const confirmUploadBody = z.object({ mapping: columnMappingSchema, card: z.union([z.object({ id: z.uuid() }).strict(), z.object({ name: z.string().trim().min(1).max(30) }).strict()]), password: pdfPassword.optional() }).strict();
 
 type UploadRow = Database["public"]["Tables"]["uploads"]["Row"];
 type TransactionInsert = Database["public"]["Tables"]["transactions"]["Insert"];
@@ -53,7 +58,9 @@ async function markFailed(userId: string, uploadId: string, code: ErrorCode): Pr
   db(error); return fail(code);
 }
 
-async function loadTable(userId: string, upload: UploadRow): Promise<TableGuess> {
+interface LoadedTable { table: TableGuess; pdf: boolean; suggested: ColumnMapping | null }
+
+async function loadTable(userId: string, upload: UploadRow, password?: string): Promise<LoadedTable> {
   if (!upload.storage_path.startsWith(`${userId}/`)) fail("INTERNAL");
   const bytes = await adminStorage.read(upload.storage_path);
   if (!bytes) fail("INVALID_STATE");
@@ -61,11 +68,19 @@ async function loadTable(userId: string, upload: UploadRow): Promise<TableGuess>
   if (createHash("sha256").update(bytes).digest("hex") !== upload.sha256) return markFailed(userId, upload.id, "CORRUPT_FILE");
   const sniffed = sniffFile(bytes, upload.filename);
   if (!sniffed.ok) return markFailed(userId, upload.id, sniffed.error);
+  if (sniffed.value.kind === "pdf") {
+    // 비밀번호가 없거나 틀리면 실패로 기록하지 않는다. 사용자가 다시 입력해 같은 업로드를 이어 간다.
+    const pages = await readPdf(bytes, password ?? null);
+    if (!pages.ok) return pages.error === "PDF_PASSWORD_REQUIRED" || pages.error === "PDF_PASSWORD_WRONG" ? fail(pages.error) : markFailed(userId, upload.id, pages.error);
+    const table = pdfTable(pages.value);
+    if (!table.ok) return markFailed(userId, upload.id, table.error);
+    return { table: table.value, pdf: true, suggested: suggestPdfMapping(table.value) };
+  }
   const decoded = decodeFile(bytes, sniffed.value);
   if (!decoded.ok) return markFailed(userId, upload.id, decoded.error);
   const table = detectTable(decoded.value);
   if (!table.ok) return markFailed(userId, upload.id, table.error);
-  return table.value;
+  return { table: table.value, pdf: false, suggested: null };
 }
 
 export async function createUpload(userId: string, input: z.infer<typeof createUploadBody>): Promise<CreateUploadResponse> {
@@ -88,16 +103,18 @@ function mappingFrom(value: Json | null): ColumnMapping | null {
   const parsed = columnMappingSchema.safeParse(value); return parsed.success ? parsed.data : null;
 }
 
-export async function analyzeUpload(userId: string, uploadId: string): Promise<AnalyzeResponse> {
+export async function analyzeUpload(userId: string, uploadId: string, input: z.infer<typeof analyzeUploadBody> = {}): Promise<AnalyzeResponse> {
   const upload = await getUpload(userId, uploadId);
   if (upload.status === "done") fail("INVALID_STATE"); if (upload.status === "failed") fail(knownCode(upload.error_code));
-  const table = await loadTable(userId, upload); const signature = headerSignature(table.headers); const supabase = await createServerSupabase();
-  let mapping: ColumnMapping | null = null; let source: "cache" | "stored" | "ai" | null = null;
+  const { table, pdf, suggested } = await loadTable(userId, upload, input.password); const signature = headerSignature(table.headers); const supabase = await createServerSupabase();
+  let mapping: ColumnMapping | null = null; let source: "cache" | "stored" | "pdf" | "ai" | null = null;
   const { data: cached, error: cacheError } = await supabase.from("header_mappings").select("mapping").eq("user_id", userId).eq("signature", signature).maybeSingle(); db(cacheError);
   const cachedMapping = mappingFrom(cached?.mapping ?? null);
   if (cachedMapping) { const candidate = { ...cachedMapping, headerRowIndex: table.headerRowIndex }; if (validateMapping(candidate, table).ok) { mapping = candidate; source = "cache"; } }
   if (!mapping && upload.status === "awaiting_confirm") { const stored = mappingFrom(upload.mapping); if (stored && validateMapping(stored, table).ok) { mapping = stored; source = "stored"; } }
-  if (!mapping) {
+  // PDF 표는 우리가 만들었으므로 열 위치를 코드가 제안한다. Claude에는 보내지 않는다.
+  if (!mapping && suggested) { mapping = suggested; source = "pdf"; }
+  if (!mapping && !pdf) {
     try {
       await assertDailyLimit(userId, "mapping");
       const masked = maskSamples(table.headers, table.dataRows.filter((row) => !isSummaryRow(row)).slice(0, 5));
@@ -145,7 +162,7 @@ async function categorizePending(userId: string, uploadId: string): Promise<{ up
 
 export async function confirmUpload(userId: string, uploadId: string, input: z.infer<typeof confirmUploadBody>): Promise<ConfirmResponse> {
   const upload = await getUpload(userId, uploadId); if (upload.status === "done") return savedResult(upload, await pendingCount(userId, uploadId)); if (upload.status !== "awaiting_confirm") fail("INVALID_STATE");
-  const table = await loadTable(userId, upload); if (!validateMapping(input.mapping, table).ok) fail("MAPPING_INVALID");
+  const { table } = await loadTable(userId, upload, input.password); if (!validateMapping(input.mapping, table).ok) fail("MAPPING_INVALID");
   const parsed = parseRows(table, input.mapping, kstToday()); if (!parsed.rows.length) fail("NO_DATA");
   const cardId = await chooseCard(userId, input.card); const supabase = await createServerSupabase();
   const keyed = parsed.rows.map((row) => ({ row, key: identityKey({ userId, cardId, approvalNo: row.approvalNo, occurredOn: row.occurredOn, kind: row.kind, merchantKey: row.merchantKey, amountKrw: row.amountKrw, occurrence: row.occurrence }) }));

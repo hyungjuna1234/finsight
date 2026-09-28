@@ -16,6 +16,7 @@ export default function GuidePage() {
       <div className="mt-3 space-y-2 text-sm leading-relaxed text-body">
         <p>청구서(명세서)는 결제일 기준 묶음이라 할부·취소가 나뉘어 보여요.</p>
         <p>이용내역은 쓴 날짜·가맹점·금액이 한 줄씩 있어서 정리가 정확해요.</p>
+        <p>카드사 PDF 명세서만 있다면 그대로 올려도 돼요. 암호가 걸려 있으면 올릴 때 비밀번호를 물어봐요.</p>
       </div>
     </section>
 

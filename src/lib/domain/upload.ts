@@ -6,11 +6,11 @@ export const UPLOAD_LIMITS = {
   maxCellChars: 500,
 } as const;
 
-export const ACCEPTED_EXTENSIONS = ["csv", "xls", "xlsx"] as const;
+export const ACCEPTED_EXTENSIONS = ["csv", "xls", "xlsx", "pdf"] as const;
 export type AcceptedExtension = (typeof ACCEPTED_EXTENSIONS)[number];
 
 export const ACCEPT_ATTR =
-  ".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  ".csv,.xls,.xlsx,.pdf,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf";
 
 export function fileExtension(filename: string): AcceptedExtension | null {
   const dot = filename.lastIndexOf(".");

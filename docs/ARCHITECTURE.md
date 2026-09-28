@@ -42,7 +42,7 @@ src/
 ├─ components/ ui/(api-fetch.ts 포함) · dashboard/ · upload/ · pro/ · chat/ · marketing/(landing/ 포함)
 ├─ lib/
 │  ├─ domain/    categories.ts · money.ts · month.ts · errors.ts · result.ts · redirect.ts · types.ts
-│  ├─ ingest/    sniff.ts · decode.ts · table.ts · mask.ts · mapping.ts · parse.ts · identity.ts · merchant.ts · rules.ts
+│  ├─ ingest/    sniff.ts · decode.ts · pdf.ts · pdf-table.ts · table.ts · mask.ts · mapping.ts · parse.ts · identity.ts · merchant.ts · rules.ts
 │  ├─ analytics/ month.ts · compare.ts · recurring.ts · plan.ts
 │  └─ demo/      fixtures.ts
 ├─ server/
@@ -77,9 +77,12 @@ export type Result<T, E extends string> = { ok: true; value: T } | { ok: false; 
 ## 핵심 순수 함수 (시그니처 — 구현은 각 step)
 ```ts
 // ingest
-sniffFile(bytes: Uint8Array, filename: string): Result<Sniff, 'UNSUPPORTED_FORMAT'|'ENCRYPTED_FILE'|'EMPTY_FILE'>
-decodeFile(bytes: Uint8Array, sniff: Sniff): Result<Sheet[], 'ENCODING_ERROR'|'CORRUPT_FILE'|'TOO_MANY_ROWS'|'FILE_TOO_COMPLEX'|'ENCRYPTED_FILE'>
+sniffFile(bytes: Uint8Array, filename: string): Result<Sniff, 'UNSUPPORTED_FORMAT'|'ENCRYPTED_FILE'|'EMPTY_FILE'>   // kind: xlsx·xls·html·xml·text·pdf
+decodeFile(bytes: Uint8Array, sniff: Sniff): Result<Sheet[], 'ENCODING_ERROR'|'CORRUPT_FILE'|'TOO_MANY_ROWS'|'FILE_TOO_COMPLEX'|'ENCRYPTED_FILE'>   // pdf 제외
 detectTable(sheets: Sheet[]): Result<TableGuess, 'HEADER_NOT_FOUND'|'BILLING_STATEMENT'|'BANK_STATEMENT'>
+readPdf(bytes: Uint8Array, password: string | null): Promise<Result<PdfText[][], 'PDF_PASSWORD_REQUIRED'|'PDF_PASSWORD_WRONG'|'CORRUPT_FILE'|'FILE_TOO_COMPLEX'>>
+pdfTable(pages: PdfText[][]): Result<TableGuess, 'PDF_NO_TRANSACTIONS'|'TOO_MANY_ROWS'|'FILE_TOO_COMPLEX'>
+suggestPdfMapping(table: TableGuess): ColumnMapping | null   // 날짜 0, 가맹점 1, 금액 = 금액으로 읽히는 첫 숫자 열
 maskSamples(headers: string[], rows: string[][]): { headers: string[]; samples: string[][] }
 headerSignature(headers: string[]): string
 validateMapping(mapping: ColumnMapping, table: TableGuess): Result<ColumnMapping, 'MAPPING_INVALID'>
@@ -98,6 +101,7 @@ isProActive(ent: { plan: Plan; periodEnd: Date | null } | null, now: Date): bool
 formatKRW(amount: KRW): string · toYearMonth(date: Date | IsoDate): YearMonth · safeRedirect(target: string | null, fallback?: string): string
 ```
 - 파일 제한: 10MB, 행 10,000(SheetJS `sheetRows: 10001`), 시트 20, 셀 500자에서 자름. 셀은 NFC 정규화.
+- PDF(`.pdf` + `%PDF-` 시그니처만): `unpdf`(서버리스용 pdf.js)로 글자 조각과 좌표를 뽑는다. 50쪽 초과는 `FILE_TOO_COMPLEX`. 표는 `pdfTable`이 만든다: 날짜로 시작하고 가맹점 글자와 숫자가 있는 줄만 거래로 보고, 숫자 열은 오른쪽 끝 x 좌표로 나눈다. 거래를 모은 뒤 `합계`·`총계` 줄을 만나면 멈춘다(그 아래 해외이용 상세표가 같은 거래를 다시 적는다). 열 제목은 만든 것(`이용일`, `이용하신 곳`, `열 N`)이고, 기간은 문서 전체 글자에서 찾는다. 이름·주소·안내문은 표에 들어오지 않는다. 스캔 PDF(글자 없음)는 `PDF_NO_TRANSACTIONS`.
 - 인코딩: BOM(UTF-8/UTF-16LE/BE) → UTF-8(fatal) → `iconv-lite` cp949. `TextDecoder('euc-kr')`는 CP949 확장 한글을 깨뜨리므로 쓰지 않는다.
 - 마스킹: 구분자(`-`·공백·`*`·`.`)가 섞여도 숫자가 7개 이상인 연속 토큰은 `#`으로, 텍스트 셀은 `첫 글자***(N자)`로. 저장하는 가맹점명에도 숫자 마스킹을 적용한다. 카드번호 열은 끝 4자리만 남긴다.
 - `identityKey`: 승인번호가 있으면 `hash(userId, cardId, approvalNo, occurredOn, kind)`(금액 제외 → 추정 금액이 확정 금액으로 갱신됨). 없으면 `hash(userId, cardId, occurredOn, merchantKey, amountKrw, kind, occurrence)` — occurrence는 같은 파일 안 같은 키의 순번.
@@ -108,12 +112,13 @@ POST /api/uploads {filename,size,sha256}
   → 같은 사용자·sha256의 done 업로드가 있으면 DUPLICATE_FILE
   → uploads(status=uploaded) 생성, adminStorage.createUploadUrl('{uid}/{uploadId}/original') (upsert 금지)
 브라우저: fetch PUT
-POST /api/uploads/:id/analyze   (maxDuration 60)
-  → adminStorage.read → sniff → decode → detectTable
-  → header_mappings(사용자별) 적중? 아니면 claude.proposeMapping(마스킹 샘플). Claude 장애면 mapping=null
+POST /api/uploads/:id/analyze {password?}   (maxDuration 60)
+  → adminStorage.read → sniff → (pdf: readPdf(password) → pdfTable | 그 외: decode → detectTable)
+     PDF_PASSWORD_REQUIRED·PDF_PASSWORD_WRONG은 failed로 기록하지 않는다(같은 업로드에 비밀번호를 넣어 다시 호출)
+  → header_mappings(사용자별) 적중? 아니면 이전 제안(awaiting_confirm) → pdf면 suggestPdfMapping, 아니면 claude.proposeMapping(마스킹 샘플). Claude 장애면 mapping=null
   → validateMapping(샘플 파싱률 95% 이상) → status=awaiting_confirm → {preview, mapping, autoConfirm}
-POST /api/uploads/:id/confirm {mapping, card}   (maxDuration 120)
-  → sha256 재확인 → parseRows → transactions upsert(onConflict user_id,identity_key)
+POST /api/uploads/:id/confirm {mapping, card, password?}   (maxDuration 120)
+  → sha256 재확인 → (pdf면 password로 다시 연다) → parseRows → transactions upsert(onConflict user_id,identity_key)
   → header_mappings 저장 → 분류: override → 같은 가맹점 이전 거래 → categorizeByRule → claude.classify(100개씩)
   → Claude 실패분과 분류 상한을 넘은 가맹점은 category='기타', category_source='pending' → status=done → {inserted, duplicates, pending, period}
 POST /api/uploads/:id/recategorize → pending만 다시 분류
@@ -121,6 +126,7 @@ DELETE /api/uploads/:id → 이 업로드의 거래(upload_id cascade)와 원본
 GET /api/cron/cleanup (매일) → 90일 지난 원본 삭제(original_deleted_at 기록), 24시간 넘은 uploaded 상태 업로드·파일 삭제
 ```
 재호출해도 결과가 같다(upsert). 여러 파일은 클라이언트가 하나씩 차례로 보낸다.
+PDF 비밀번호는 클라이언트가 그 파일을 처리하는 동안 메모리에만 들고 analyze·confirm body로만 보낸다. 서버는 메모리에서만 쓰고 DB·Storage·로그에 남기지 않는다. Storage의 원본은 암호가 걸린 그대로 둔다.
 
 ## Pro 권한
 ```
@@ -158,8 +164,8 @@ polar: createCheckout · getCheckout · createPortalSession · getCustomerState 
 | `POST /auth/signout` | user | → 302 `/` | — |
 | `POST /api/consents` | user | `{items:[{kind,version}]}` → 204 | `VALIDATION_FAILED`, `UNDERAGE` |
 | `POST /api/uploads` | user·동의·하루 30개 | `{filename,size,sha256}` → `{uploadId,uploadUrl}` | `DUPLICATE_FILE`, `FILE_TOO_LARGE`, `UNSUPPORTED_FORMAT`, `RATE_LIMITED` |
-| `POST /api/uploads/:id/analyze` | user·동의 | → `{preview,mapping,autoConfirm}` | 파일 에러 코드 전부, `NOT_FOUND` |
-| `POST /api/uploads/:id/confirm` | user·동의 | `{mapping, card:{id}\|{name}}` → `{inserted,duplicates,pending,period}` | `MAPPING_INVALID`, `INVALID_STATE` |
+| `POST /api/uploads/:id/analyze` | user·동의 | `{password?}`(1~128자) → `{preview,mapping,autoConfirm}` | 파일 에러 코드 전부, `PDF_PASSWORD_REQUIRED`, `PDF_PASSWORD_WRONG`, `NOT_FOUND` |
+| `POST /api/uploads/:id/confirm` | user·동의 | `{mapping, card:{id}\|{name}, password?}` → `{inserted,duplicates,pending,period}` | `MAPPING_INVALID`, `INVALID_STATE`, `PDF_PASSWORD_*` |
 | `POST /api/uploads/:id/recategorize` | user·동의 | → `{updated,pending}` | `AI_UNAVAILABLE` |
 | `DELETE /api/uploads/:id` | user | → 204 | `NOT_FOUND` |
 | `PATCH /api/transactions/:id` | user | `{category, scope:'one'\|'merchant'}` → `{updated}` | `VALIDATION_FAILED` |
@@ -183,7 +189,8 @@ polar: createCheckout · getCheckout · createPortalSession · getCustomerState 
 | 403 | `CONSENT_REQUIRED` · `UNDERAGE` · `FORBIDDEN` | 동의 화면 · 안내 |
 | 404 | `NOT_FOUND` | 목록으로 |
 | 409 | `DUPLICATE_FILE` · `INVALID_STATE` · `ALREADY_SUBSCRIBED` | 기존 업로드로 · 새로고침 · 포털 |
-| 413·415·422 | `FILE_TOO_LARGE` · `UNSUPPORTED_FORMAT` · `ENCRYPTED_FILE` · `EMPTY_FILE` · `ENCODING_ERROR` · `CORRUPT_FILE` · `TOO_MANY_ROWS` · `FILE_TOO_COMPLEX` · `HEADER_NOT_FOUND` · `BILLING_STATEMENT` · `BANK_STATEMENT` · `MAPPING_INVALID` · `NO_DATA` | 코드별 안내 + [가이드] |
+| 413·415·422 | `FILE_TOO_LARGE` · `UNSUPPORTED_FORMAT` · `ENCRYPTED_FILE` · `EMPTY_FILE` · `ENCODING_ERROR` · `CORRUPT_FILE` · `TOO_MANY_ROWS` · `FILE_TOO_COMPLEX` · `HEADER_NOT_FOUND` · `PDF_NO_TRANSACTIONS` · `BILLING_STATEMENT` · `BANK_STATEMENT` · `MAPPING_INVALID` · `NO_DATA` | 코드별 안내 + [가이드] |
+| 422 | `PDF_PASSWORD_REQUIRED` · `PDF_PASSWORD_WRONG` | 비밀번호 입력칸(업로드는 실패로 두지 않음) |
 | 429 | `RATE_LIMITED` | "내일 다시 시도해 주세요" |
 | 503 | `AI_UNAVAILABLE` · `BILLING_UNAVAILABLE` | 재시도 버튼 |
 | 500 | `INTERNAL` | 일반 에러 화면 |
@@ -212,3 +219,4 @@ polar: createCheckout · getCheckout · createPortalSession · getCustomerState 
 - **Polar** (`@polar-sh/sdk` 1.0.0-alpha.22, 버전 고정): `import { createPolar } from "@polar-sh/sdk/2026-04"`. 구 SDK(`new Polar(...)`)와 `@polar-sh/nextjs` 어댑터는 쓰지 않는다. 웹훅 검증·Customer State 사용법은 `node_modules/@polar-sh/sdk/README.md`를 따른다.
 - **SheetJS** (`xlsx` 0.20.3): `import * as XLSX from "xlsx"; import * as cpexcel from "xlsx/dist/cpexcel.full.mjs"; XLSX.set_cptable(cpexcel);` 암호 파일은 `/password-protected/` 에러를 던진다. HTML로 된 xls는 바이트를 직접 디코딩한 문자열로 넘긴다.
 - **iconv-lite**: `iconv.decode(Buffer.from(bytes), "cp949")`.
+- **unpdf** (1.8, pdf.js 6.1 서버리스 빌드 내장, worker·canvas 불필요): `getDocumentProxy(bytes.slice(), { password, disableFontFace: true, useSystemFonts: false, verbosity: 0 })`. pdf.js가 버퍼를 가져가므로 복사본을 넘긴다. 암호 오류는 `name === "PasswordException"`, `code` 1(비밀번호 필요)·2(틀림). 글자는 `page.getTextContent().items`의 `str`·`transform[4..5]`(x, y)·`width`·`height`. 정리는 `doc.loadingTask.destroy()`. pdf.js 6에는 `isEvalSupported` 옵션이 없다(eval 경로 제거됨).
