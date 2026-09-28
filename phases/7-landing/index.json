@@ -1,0 +1,15 @@
+{
+  "project": "FinSight",
+  "phase": "7-landing",
+  "steps": [
+    { "step": 0, "name": "landing-data", "status": "pending" },
+    { "step": 1, "name": "landing-kit", "status": "pending" },
+    { "step": 2, "name": "landing-hero", "status": "pending" },
+    { "step": 3, "name": "landing-tiles", "status": "pending" },
+    { "step": 4, "name": "landing-report", "status": "pending" },
+    { "step": 5, "name": "landing-flow", "status": "pending" },
+    { "step": 6, "name": "landing-closing", "status": "pending" },
+    { "step": 7, "name": "ai-disclosure", "status": "pending" },
+    { "step": 8, "name": "landing-page", "status": "pending" }
+  ]
+}
