@@ -66,7 +66,7 @@ export function SpendTiles({ showcase }: { showcase: LandingShowcase }): JSX.Ele
         </div>
       </Tile> : null}
 
-      <Tile id="weekend-tile-title" title="주말에 몰린 지출">
+      <Tile id="weekend-tile-title" title="주말 지출 비율">
         <p className="mt-2 text-4xl font-bold tracking-tight text-ink tabular-nums md:text-5xl"><CountUp value={showcase.weekend.share} format="percent" /></p>
         <p className="mt-1 text-sm text-muted">토·일 이틀에 한 달 지출의 {showcase.weekend.share}%를 썼어요</p>
         <div aria-hidden="true" className="mt-5 grid h-32 grid-cols-7 items-end gap-2">

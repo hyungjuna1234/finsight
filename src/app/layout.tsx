@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
+import { parseSiteUrl } from "@/lib/domain/site-url";
 import "./globals.css";
 
 // 빌드에 네트워크가 필요 없도록 로컬 폰트를 쓴다 (next/font/google 사용 금지).
@@ -12,6 +13,7 @@ const pretendard = localFont({
 });
 
 export const metadata: Metadata = {
+  metadataBase: parseSiteUrl(process.env.NEXT_PUBLIC_APP_URL),
   title: "FinSight",
   description: "카드 이용내역 파일만 올리면 지출을 정리해 드려요.",
 };

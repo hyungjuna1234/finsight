@@ -50,7 +50,7 @@ describe("SpendTiles", () => {
   it("marks only Saturday and Sunday as weekend bars and provides text alternatives", () => {
     const showcase = getLandingShowcase();
     renderTiles(showcase);
-    const tile = screen.getByRole("article", { name: "주말에 몰린 지출" });
+    const tile = screen.getByRole("article", { name: "주말 지출 비율" });
     const bars = within(tile).getAllByTestId("weekday-bar");
 
     expect(bars).toHaveLength(7);
