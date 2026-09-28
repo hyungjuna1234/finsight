@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "decode-fixes",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-28T20:47:01+0900",
+      "summary": "선언 charset을 무시하고 BOM·추론·UTF-8·CP949 순으로 디코딩하며 xlsx 날짜를 ISO 형식으로 고정함",
+      "completed_at": "2026-09-28T20:50:06+0900"
     },
     {
       "step": 2,
