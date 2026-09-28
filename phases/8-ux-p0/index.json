@@ -44,7 +44,10 @@
     {
       "step": 5,
       "name": "onboarding-steps",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-29T01:49:13+0900",
+      "completed_at": "2026-09-29T01:53:32+0900",
+      "summary": "로그인·동의 화면에 접근 가능한 3단계 온보딩 표시를 추가하고 동의 성공 시 consent_done 이벤트를 기록함"
     },
     {
       "step": 6,
