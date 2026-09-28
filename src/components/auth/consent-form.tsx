@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 import { apiFetch } from "@/components/ui/api-fetch";
+import { trackEvent } from "@/components/ui/track";
 import type { ConsentKind } from "@/lib/domain/consent";
 
 interface ConsentItem {
@@ -31,6 +32,7 @@ export function ConsentForm({ items }: { items: readonly ConsentItem[] }) {
     setError(null);
     try {
       await apiFetch<void>("/api/consents", { method: "POST", body: { kinds: selected } });
+      trackEvent("consent_done", {});
       router.push("/upload");
     } catch {
       setError("동의를 저장하지 못했어요. 다시 시도해 주세요.");

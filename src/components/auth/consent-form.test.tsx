@@ -4,10 +4,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CONSENT_ITEMS } from "@/lib/domain/consent";
 
-const { apiFetchMock, pushMock } = vi.hoisted(() => ({ apiFetchMock: vi.fn(), pushMock: vi.fn() }));
+const { apiFetchMock, pushMock, trackMock } = vi.hoisted(() => ({
+  apiFetchMock: vi.fn(),
+  pushMock: vi.fn(),
+  trackMock: vi.fn(),
+}));
 
 vi.mock("@/components/ui/api-fetch", () => ({ apiFetch: apiFetchMock }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: pushMock }) }));
+vi.mock("@vercel/analytics", () => ({ track: trackMock }));
 
 import { ConsentForm } from "./consent-form";
 
@@ -52,7 +57,22 @@ describe("ConsentForm", () => {
       method: "POST",
       body: { kinds: ["privacy", "overseas_transfer", "terms", "age14"] },
     });
+    expect(trackMock).toHaveBeenCalledTimes(1);
+    expect(trackMock).toHaveBeenCalledWith("consent_done");
     expect(pushMock).toHaveBeenCalledWith("/upload");
+  });
+
+  it("동의 저장에 실패하면 완료 이벤트를 보내지 않는다", async () => {
+    const user = userEvent.setup();
+    apiFetchMock.mockRejectedValue(new Error("request failed"));
+    render(<ConsentForm items={CONSENT_ITEMS} />);
+
+    await user.click(screen.getByRole("checkbox", { name: "모두 동의" }));
+    await user.click(screen.getByRole("button", { name: "시작하기" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("동의를 저장하지 못했어요.");
+    expect(trackMock).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   it("provides a separate POST signout form", () => {

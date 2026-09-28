@@ -1,5 +1,6 @@
 import { safeRedirect } from "@/lib/domain/redirect";
 import type { InAppBrowser } from "@/lib/domain/user-agent";
+import { OnboardingSteps } from "@/components/ui/onboarding-steps";
 
 export interface LoginPanelProps {
   next: string | null;
@@ -30,6 +31,7 @@ export function LoginPanel({ next, error, inAppBrowser }: LoginPanelProps) {
   return (
     <main className="mx-auto w-full max-w-md px-4 py-16">
       <section className="space-y-6">
+        <OnboardingSteps current={1} />
         <div>
           <p className="text-sm font-medium text-accent">FinSight</p>
           <h1 className="mt-2 text-2xl font-semibold text-ink">카드 지출을 한눈에 정리해요</h1>

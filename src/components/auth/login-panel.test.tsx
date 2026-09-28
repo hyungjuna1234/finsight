@@ -1,9 +1,19 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { LoginPanel } from "./login-panel";
 
 describe("LoginPanel", () => {
+  it("가입 단계를 현재로 표시하는 시작 단계를 보여 준다", () => {
+    render(<LoginPanel next={null} error={null} inAppBrowser={null} />);
+
+    const steps = screen.getByRole("list", { name: "시작 단계" });
+    expect(steps).toBeInTheDocument();
+    const [signup] = within(steps).getAllByRole("listitem");
+    expect(signup).toHaveTextContent("가입");
+    expect(signup).toHaveAttribute("aria-current", "step");
+  });
+
   it("카카오와 구글 서버 OAuth 링크에 안전한 next를 전달한다", () => {
     render(<LoginPanel next="/upload?source=demo" error={null} inAppBrowser={null} />);
     expect(screen.getByRole("link", { name: "카카오로 시작하기" })).toHaveAttribute(
