@@ -2,13 +2,49 @@
   "project": "FinSight",
   "phase": "8-ux-p0",
   "steps": [
-    { "step": 0, "name": "ux-logic", "status": "pending" },
-    { "step": 1, "name": "event-kit", "status": "pending" },
-    { "step": 2, "name": "journey-query", "status": "pending" },
-    { "step": 3, "name": "pro-teasers", "status": "pending" },
-    { "step": 4, "name": "dashboard-view", "status": "pending" },
-    { "step": 5, "name": "onboarding-steps", "status": "pending" },
-    { "step": 6, "name": "upload-guide", "status": "pending" },
-    { "step": 7, "name": "funnel-events", "status": "pending" }
-  ]
+    {
+      "step": 0,
+      "name": "ux-logic",
+      "status": "completed",
+      "summary": "buildJourney와 JourneyPrimary, monthHeadline, withSubject, DashboardModel.headline을 추가하고 순수 로직 테스트를 보강함",
+      "started_at": "2026-09-28T23:34:19+0900",
+      "completed_at": "2026-09-28T23:37:38+0900"
+    },
+    {
+      "step": 1,
+      "name": "event-kit",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "journey-query",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "pro-teasers",
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "name": "dashboard-view",
+      "status": "pending"
+    },
+    {
+      "step": 5,
+      "name": "onboarding-steps",
+      "status": "pending"
+    },
+    {
+      "step": 6,
+      "name": "upload-guide",
+      "status": "pending"
+    },
+    {
+      "step": 7,
+      "name": "funnel-events",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-09-28T23:34:19+0900"
 }
