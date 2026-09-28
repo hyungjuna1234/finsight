@@ -1,14 +1,19 @@
-import Link from "next/link";
+import type { LandingShowcase } from "@/lib/demo/landing";
+import { HeroStage } from "./landing/hero-stage";
+import { LandingCta } from "./landing/landing-cta";
+import { LandingSection } from "./landing/landing-section";
 
-export function Hero() {
-  return <section aria-labelledby="hero-heading" className="py-8 sm:py-14">
-    <div className="max-w-3xl">
-      <h1 id="hero-heading" className="text-4xl font-semibold tracking-tight text-ink">카드 이용내역 파일만 올리면, 한 달 지출이 정리돼요</h1>
-      <p className="mt-4 text-base leading-relaxed text-body">연동 없이 카드사 홈페이지에서 받은 파일만 올려요.</p>
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Link href="/login?next=%2Fupload" className="rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent-hover">무료로 시작</Link>
-        <Link href="/demo" className="rounded-md border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink hover:bg-bg">예시 보기</Link>
+export function Hero({ showcase }: { showcase: LandingShowcase }) {
+  return <LandingSection id="hero" labelledBy="hero-heading">
+    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.04fr)] lg:items-center lg:gap-14">
+      <div>
+        <p className="text-sm font-semibold text-accent">연동 없는 AI 지출 정리</p>
+        <h1 id="hero-heading" className="mt-2.5 text-[2rem] leading-[1.18] font-bold tracking-[-0.035em] text-ink sm:text-5xl lg:text-[3.25rem] xl:text-[3.5rem]">월급이 <mark className="bg-[linear-gradient(transparent_60%,var(--color-mark)_60%,var(--color-mark)_94%,transparent_94%)] text-inherit">어디로 새는지</mark>, 파일 하나로 AI가 찾아 드려요</h1>
+        <p className="mt-4.5 max-w-[30em] text-base leading-relaxed text-body sm:text-lg">카드사 홈페이지에서 받은 이용내역 파일만 올리면, AI가 카테고리를 나누고 새는 돈을 짚어 줘요.</p>
+        <div className="mt-7 flex flex-wrap gap-2.5"><LandingCta href="/login?next=%2Fupload" cta="start" section="hero" variant="primary">무료로 시작</LandingCta><LandingCta href="/demo" cta="demo" section="hero" variant="secondary">로그인 없이 예시 보기</LandingCta></div>
+        <ul className="mt-5 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">{["계좌·카드 연동 없음", "원본은 90일 뒤 자동 삭제", "첫 AI 리포트 무료"].map((item) => <li key={item} className="inline-flex items-center gap-2"><span className="size-1.5 rounded-full bg-accent" aria-hidden="true" />{item}</li>)}</ul>
       </div>
+      <HeroStage month={showcase.month} total={showcase.total} count={showcase.count} rows={showcase.sheetRows} bars={showcase.categoryBars} insight={{ headline: showcase.report.content.headline, increase: showcase.increase }} />
     </div>
-  </section>;
+  </LandingSection>;
 }

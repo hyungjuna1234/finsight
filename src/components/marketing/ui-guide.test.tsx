@@ -1,5 +1,6 @@
 import { render } from "@testing-library/react";
 import { expect, it } from "vitest";
+import { getLandingShowcase } from "@/lib/demo/landing";
 import { FAQ } from "./faq";
 import { Hero } from "./hero";
 import { HowItWorks } from "./how-it-works";
@@ -9,7 +10,7 @@ import { SiteHeader } from "./site-header";
 import { TrustPoints } from "./trust-points";
 
 it("follows the marketing anti-slop rules", () => {
-  const { container } = render(<><SiteHeader /><Hero /><TrustPoints /><HowItWorks /><PricingSummary /><FAQ /><SiteFooter /></>);
+  const { container } = render(<><SiteHeader /><Hero showcase={getLandingShowcase()} /><TrustPoints /><HowItWorks /><PricingSummary /><FAQ /><SiteFooter /></>);
   const html = container.innerHTML;
   for (const forbidden of ["backdrop-blur", "bg-gradient", "bg-clip-text", "blur-3xl", "rounded-2xl", "purple", "indigo", "violet"]) {
     expect(html).not.toContain(forbidden);
