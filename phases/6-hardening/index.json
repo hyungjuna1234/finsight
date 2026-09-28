@@ -29,7 +29,10 @@
     {
       "step": 3,
       "name": "cleanup-paths",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-28T20:54:07+0900",
+      "summary": "정리 대상 경로를 DB storage_path 대신 검증된 user_id와 upload id로 재구성하고 잘못된 행만 격리함",
+      "completed_at": "2026-09-28T20:57:52+0900"
     },
     {
       "step": 4,
