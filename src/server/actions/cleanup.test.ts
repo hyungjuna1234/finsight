@@ -38,6 +38,7 @@ vi.mock("@/server/admin", () => ({
 vi.mock("@/server/logger", () => ({ logger: { info: fake.info } }));
 
 import { runCleanup } from "./cleanup";
+import { adminStorage, adminUploads } from "@/server/admin";
 
 const now = new Date("2026-09-27T12:00:00.000Z");
 const ago = (hours: number) => new Date(now.getTime() - hours * 60 * 60 * 1000);
@@ -69,6 +70,16 @@ describe("runCleanup", () => {
     fake.rows = [row("old", 91 * 24, "done")]; fake.files.add(fake.rows[0]!.storagePath); fake.failRemove = true;
     await expect(runCleanup(now)).rejects.toThrow("storage failed");
     expect(fake.rows[0]!.originalDeletedAt).toBeNull();
+  });
+
+  it("marks only the ids returned by the expired-originals lookup", async () => {
+    const selected = row("selected", 91 * 24, "done");
+    vi.mocked(adminStorage.listExpiredOriginals).mockResolvedValueOnce([selected]).mockResolvedValueOnce([]);
+    vi.mocked(adminUploads.markOriginalDeleted).mockResolvedValueOnce(1);
+
+    await runCleanup(now);
+
+    expect(adminUploads.markOriginalDeleted).toHaveBeenCalledWith(["selected"], now);
   });
 
   it("runs at most five batches of 200 per phase", async () => {

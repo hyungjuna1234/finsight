@@ -10,6 +10,7 @@ vi.mock("@/services/supabase/admin", () => ({ createAdminSupabase: () => ({ stor
 import { adminAuth, adminEntitlements, adminStorage, adminUploads, storagePathFor } from "./admin";
 
 const uid = "11111111-1111-4111-8111-111111111111";
+const uploadId = "22222222-2222-4222-8222-222222222222";
 
 describe("admin auth", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -50,7 +51,7 @@ describe("admin storage", () => {
   });
 
   it("lists expired originals with a bounded query", async () => {
-    const limit = vi.fn().mockResolvedValue({ data: [{ id: "upload-1", storage_path: `${uid}/upload/original` }], error: null });
+    const limit = vi.fn().mockResolvedValue({ data: [{ id: uploadId, user_id: uid, storage_path: "untrusted/path" }], error: null });
     const order = vi.fn(() => ({ limit }));
     const lt = vi.fn(() => ({ order }));
     const is = vi.fn(() => ({ lt }));
@@ -59,11 +60,30 @@ describe("admin storage", () => {
     const before = new Date("2026-06-29T00:00:00.000Z");
 
     await expect(adminStorage.listExpiredOriginals(before, 200)).resolves.toEqual([
-      { id: "upload-1", storagePath: `${uid}/upload/original` },
+      { id: uploadId, storagePath: `${uid}/${uploadId}/original` },
     ]);
+    expect(select).toHaveBeenCalledWith("id,user_id");
     expect(is).toHaveBeenCalledWith("original_deleted_at", null);
     expect(lt).toHaveBeenCalledWith("created_at", before.toISOString());
     expect(limit).toHaveBeenCalledWith(200);
+  });
+
+  it("omits an invalid cleanup row without failing the batch", async () => {
+    const validId = "33333333-3333-4333-8333-333333333333";
+    const limit = vi.fn().mockResolvedValue({
+      data: [
+        { id: uploadId, user_id: "not-a-uuid" },
+        { id: "not-a-uuid", user_id: uid },
+        { id: validId, user_id: uid },
+      ],
+      error: null,
+    });
+    const select = vi.fn(() => ({ is: vi.fn(() => ({ lt: vi.fn(() => ({ order: vi.fn(() => ({ limit })) })) })) }));
+    mocks.from.mockReturnValue({ select });
+
+    await expect(adminStorage.listExpiredOriginals(new Date(), 200)).resolves.toEqual([
+      { id: validId, storagePath: `${uid}/${validId}/original` },
+    ]);
   });
 });
 
@@ -84,7 +104,7 @@ describe("admin uploads", () => {
   });
 
   it("lists only stale uploaded rows", async () => {
-    const limit = vi.fn().mockResolvedValue({ data: [], error: null });
+    const limit = vi.fn().mockResolvedValue({ data: [{ id: uploadId, user_id: uid, storage_path: "untrusted/path" }], error: null });
     const order = vi.fn(() => ({ limit }));
     const lt = vi.fn(() => ({ order }));
     const eq = vi.fn(() => ({ lt }));
@@ -92,7 +112,10 @@ describe("admin uploads", () => {
     mocks.from.mockReturnValue({ select });
     const before = new Date("2026-09-26T00:00:00.000Z");
 
-    await adminUploads.listStale(before, 200);
+    await expect(adminUploads.listStale(before, 200)).resolves.toEqual([
+      { id: uploadId, storagePath: `${uid}/${uploadId}/original` },
+    ]);
+    expect(select).toHaveBeenCalledWith("id,user_id");
     expect(eq).toHaveBeenCalledWith("status", "uploaded");
     expect(lt).toHaveBeenCalledWith("created_at", before.toISOString());
   });

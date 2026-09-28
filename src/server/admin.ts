@@ -6,6 +6,7 @@ import { logger } from "@/server/logger";
 import { createAdminSupabase } from "@/services/supabase/admin";
 
 const UUID_PATH = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\//i;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function safePath(path: string): void {
   if (!UUID_PATH.test(path) || path.startsWith("/") || path.split("/").includes("..")) throw new Error("Unsafe storage path");
@@ -19,8 +20,15 @@ function databaseError(event: string, error: { code?: string } | null): never {
   return internal();
 }
 
-function cleanupRows(data: { id: string; storage_path: string }[] | null): { id: string; storagePath: string }[] {
-  return (data ?? []).map(({ id, storage_path: storagePath }) => ({ id, storagePath }));
+function cleanupRows(data: { id: string; user_id: string }[] | null): { id: string; storagePath: string }[] {
+  return (data ?? []).flatMap(({ id, user_id: userId }) => {
+    try {
+      return [{ id, storagePath: storagePathFor(userId, id) }];
+    } catch {
+      logger.warn("cleanup.invalid_row", { id });
+      return [];
+    }
+  });
 }
 
 function authErrorStatus(error: unknown): number | null {
@@ -41,6 +49,7 @@ export const adminAuth = {
 };
 
 export function storagePathFor(userId: string, uploadId: string): string {
+  if (!UUID.test(userId) || !UUID.test(uploadId)) throw new Error("Invalid storage path id");
   const path = `${userId}/${uploadId}/original`;
   safePath(path);
   return path;
@@ -95,7 +104,7 @@ export const adminStorage = {
   async listExpiredOriginals(before: Date, limit: number): Promise<{ id: string; storagePath: string }[]> {
     const { data, error } = await createAdminSupabase()
       .from("uploads")
-      .select("id,storage_path")
+      .select("id,user_id")
       .is("original_deleted_at", null)
       .lt("created_at", before.toISOString())
       .order("created_at", { ascending: true })
@@ -121,7 +130,7 @@ export const adminUploads = {
   async listStale(before: Date, limit: number): Promise<{ id: string; storagePath: string }[]> {
     const { data, error } = await createAdminSupabase()
       .from("uploads")
-      .select("id,storage_path")
+      .select("id,user_id")
       .eq("status", "uploaded")
       .lt("created_at", before.toISOString())
       .order("created_at", { ascending: true })
