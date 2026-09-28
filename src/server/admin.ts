@@ -203,6 +203,14 @@ export const adminEntitlements = {
     return data?.length === 1;
   },
 
+  async releaseFreeInsight(userId: string): Promise<void> {
+    const { error } = await createAdminSupabase()
+      .from("entitlements")
+      .update({ free_insight_used_at: null })
+      .eq("user_id", userId);
+    if (error) internal();
+  },
+
   async upsertIfNewer(
     userId: string,
     value: { plan: Plan; status: string; periodEnd: Date | null },

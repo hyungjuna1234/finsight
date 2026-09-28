@@ -134,7 +134,7 @@ requirePro: isProActive(entitlement, now) — plan='pro' AND (period_end IS NULL
 
 ## `server/admin.ts`가 export하는 함수 (admin 권한은 여기서만)
 - `adminStorage` (1-ingest): `createUploadUrl(path)`, `read(path)`, `remove(paths)`, `removePrefix(prefix)`(prefix는 `/`로 끝남, 목록을 페이지 단위로 끝까지) · 5-launch: `listExpiredOriginals(before, limit)`
-- `adminEntitlements` (3-pro): `get(userId)`, `markFreeInsightUsed(userId)`(조건부 update) · 4-billing: `upsertIfNewer(userId, value, startedAt)`
+- `adminEntitlements` (3-pro): `get(userId)`, `markFreeInsightUsed(userId)`(조건부 update), `releaseFreeInsight(userId)` · 4-billing: `upsertIfNewer(userId, value, startedAt)`
 - `adminAuth` (4-billing): `deleteUser(userId)`
 - `adminUploads` (5-launch cron): `markOriginalDeleted(ids, at)`, `listStale(before, limit)`, `deleteStale(ids, before)`
 모든 함수는 `userId`나 경로를 인자로 받고, 요청 body가 아니라 세션에서 온 값만 넘긴다.

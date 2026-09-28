@@ -180,3 +180,19 @@ describe("adminEntitlements.upsertIfNewer", () => {
     await expect(adminEntitlements.upsertIfNewer(uid, value, startedAt)).resolves.toBe("unknown_user");
   });
 });
+
+describe("adminEntitlements.releaseFreeInsight", () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it("clears the free insight timestamp for the user", async () => {
+    const eq = vi.fn().mockResolvedValue({ error: null });
+    const update = vi.fn(() => ({ eq }));
+    mocks.from.mockReturnValue({ update });
+
+    await expect(adminEntitlements.releaseFreeInsight(uid)).resolves.toBeUndefined();
+
+    expect(mocks.from).toHaveBeenCalledWith("entitlements");
+    expect(update).toHaveBeenCalledWith({ free_insight_used_at: null });
+    expect(eq).toHaveBeenCalledWith("user_id", uid);
+  });
+});
