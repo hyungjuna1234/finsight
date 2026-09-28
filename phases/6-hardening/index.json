@@ -37,7 +37,10 @@
     {
       "step": 4,
       "name": "classify-cap",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-28T20:57:52+0900",
+      "summary": "DAILY_LIMITS.classify와 remainingDailyQuota를 추가하고 초과 배치를 pending·rateLimited로 처리함",
+      "completed_at": "2026-09-28T21:04:06+0900"
     },
     {
       "step": 5,
