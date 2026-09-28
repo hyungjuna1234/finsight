@@ -1,0 +1,36 @@
+{
+  "project": "FinSight",
+  "phase": "6-hardening",
+  "steps": [
+    {
+      "step": 0,
+      "name": "mask-hardening",
+      "status": "pending"
+    },
+    {
+      "step": 1,
+      "name": "decode-fixes",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "upload-path-check",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "cleanup-paths",
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "name": "classify-cap",
+      "status": "pending"
+    },
+    {
+      "step": 5,
+      "name": "free-insight-claim",
+      "status": "pending"
+    }
+  ]
+}

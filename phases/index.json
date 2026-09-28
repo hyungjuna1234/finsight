@@ -29,6 +29,10 @@
       "dir": "5-launch",
       "status": "completed",
       "completed_at": "2026-09-27T22:56:08+0900"
+    },
+    {
+      "dir": "6-hardening",
+      "status": "pending"
     }
   ]
 }
