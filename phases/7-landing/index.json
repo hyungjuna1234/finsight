@@ -61,7 +61,10 @@
     {
       "step": 7,
       "name": "ai-disclosure",
-      "status": "pending"
+      "status": "completed",
+      "summary": "동의 요약과 개인정보 처리방침에 Anthropic으로 전송되는 채팅 거래 최대 30건의 범위와 카드번호 제외 사실을 명시",
+      "started_at": "2026-09-28T22:57:36+0900",
+      "completed_at": "2026-09-28T23:00:39+0900"
     },
     {
       "step": 8,
