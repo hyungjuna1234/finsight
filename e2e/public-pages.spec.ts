@@ -17,7 +17,8 @@ test("demo에 샘플 대시보드를 보여 준다", async ({ page }) => {
   await openPublicPage(page, "/demo");
   await expect(page.getByText("샘플 데이터예요 · 실제 화면과 같아요")).toBeVisible();
   await expect(page.getByRole("heading", { name: "대시보드" })).toBeVisible();
-  await expect(page.getByText("이번 달 지출", { exact: true })).toBeVisible();
+  await expect(page.getByText("9월 지출", { exact: true })).toBeVisible();
+  await expect(page.getByText(/^9월에 /)).toBeVisible();
 });
 
 test("pricing에 가격과 결제 조건을 보여 준다", async ({ page }) => {
