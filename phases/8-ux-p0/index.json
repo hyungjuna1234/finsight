@@ -29,7 +29,10 @@
     {
       "step": 3,
       "name": "pro-teasers",
-      "status": "pending"
+      "status": "completed",
+      "summary": "대시보드 Pro 잠금을 추적 가능한 Text 링크로 낮추고 journey primary일 때만 단일 Pro CTA를 표시하도록 티저를 정리함",
+      "started_at": "2026-09-28T23:44:35+0900",
+      "completed_at": "2026-09-28T23:49:53+0900"
     },
     {
       "step": 4,
