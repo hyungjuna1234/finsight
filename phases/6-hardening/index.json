@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "upload-path-check",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-28T20:50:06+0900",
+      "summary": "20260928000000_upload_path_check.sql에 uploads_storage_path_matches_owner 제약을 추가해 사용자·업로드별 원본 경로 형식을 강제함",
+      "completed_at": "2026-09-28T20:54:07+0900"
     },
     {
       "step": 3,
