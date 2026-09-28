@@ -79,6 +79,18 @@ describe("parseRows", () => {
     expect(result.rows.find((row) => row.merchantRaw.startsWith("스마트"))?.merchantRaw).toBe("스마트스토어 #");
     expect(result.rows[0]?.cardLast4).toBe("5678");
   });
+
+  it("masks normalized full-width digits before storing merchant names", () => {
+    const table: TableGuess = {
+      sheetName: "표", sheetRows: [], headerRowIndex: 0,
+      headers: ["이용일", "가맹점", "금액"],
+      dataRows: [["2026-09-01", "카카오페이 송금 ０１０-１２３４-５６７８", "1,000"]], periodHint: null,
+    };
+    const result = parseRows(table, { headerRowIndex: 0, columns: { date: 0, merchant: 1, amount: 2 } }, "2026-09-01" as IsoDate);
+
+    expect(result.rows[0]?.merchantRaw).not.toMatch(/010|1234|5678/);
+    expect(result.rows[0]?.merchantKey).not.toMatch(/010|1234|5678/);
+  });
 });
 
 describe("parseAmountCell", () => {

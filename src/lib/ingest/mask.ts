@@ -3,11 +3,27 @@ import { HEADER_VOCAB, normalizeHeader } from "./table";
 const KNOWN_HEADERS = new Set(Object.values(HEADER_VOCAB).flat().map(normalizeHeader));
 const VALUE_WORD = /^(?:Y|N|정상|취소|부분취소|매입|미매입|일시불|\d+개월|[A-Z]{3})$/;
 const SAFE_VALUE = /^(?:#|[\d\s,:().+\-₩원]+|(?:KRW\s*)?[\d,().+\-]+)$/i;
-const DATE_TIME = /(?:\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2}|(?<!\d)\d{8}(?!\d))(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?/g;
+const DATE_TIME = /(?<![\d.*-])(?:19|20)\d{2}(?:[.\-/]\d{1,2}[.\-/]\d{1,2}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?|\d{4})(?!\d|[.*-]\d)/g;
+
+function isValidDateTime(value: string): boolean {
+  const separated = /^(?:19|20)\d{2}[.\-/](\d{1,2})[.\-/](\d{1,2})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(value);
+  if (separated) {
+    const [, month, day, hour, minute, second] = separated;
+    return Number(month) >= 1 && Number(month) <= 12
+      && Number(day) >= 1 && Number(day) <= 31
+      && (hour === undefined || (Number(hour) <= 23 && Number(minute) <= 59 && (second === undefined || Number(second) <= 59)));
+  }
+  const compact = /^(?:19|20)\d{2}(\d{2})(\d{2})$/.exec(value);
+  return compact !== null
+    && Number(compact[1]) >= 1 && Number(compact[1]) <= 12
+    && Number(compact[2]) >= 1 && Number(compact[2]) <= 31;
+}
 
 export function maskDigits(text: string): string {
+  const normalized = text.normalize("NFKC");
   const preserved: string[] = [];
-  const protectedText = text.replace(DATE_TIME, (value) => {
+  const protectedText = normalized.replace(DATE_TIME, (value) => {
+    if (!isValidDateTime(value)) return value;
     preserved.push(value);
     return `\u0000${preserved.length - 1}\u0000`;
   });
