@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "landing-kit",
-      "status": "pending"
+      "status": "completed",
+      "summary": "랜딩 색·애니메이션 토큰, 공유 차트 색상, useReveal·Reveal·CountUp·LandingCta·LandingSection 기반 컴포넌트를 추가",
+      "started_at": "2026-09-28T22:27:12+0900",
+      "completed_at": "2026-09-28T22:33:07+0900"
     },
     {
       "step": 2,
