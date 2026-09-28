@@ -45,7 +45,10 @@
     {
       "step": 5,
       "name": "free-insight-claim",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-28T21:04:06+0900",
+      "summary": "무료 인사이트 크레딧을 Claude 호출 전에 원자적으로 선점하고 AI·저장 실패 시 안전하게 반환하도록 변경함",
+      "completed_at": "2026-09-28T21:09:40+0900"
     }
   ],
   "created_at": "2026-09-28T20:43:51+0900"
