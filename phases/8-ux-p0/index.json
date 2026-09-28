@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "event-kit",
-      "status": "pending"
+      "status": "completed",
+      "summary": "타입 안전한 퍼널 이벤트 추적 유틸리티와 클릭 추적 링크를 추가하고 분석 실패가 사용자 흐름을 막지 않도록 함",
+      "started_at": "2026-09-28T23:37:38+0900",
+      "completed_at": "2026-09-28T23:40:48+0900"
     },
     {
       "step": 2,
