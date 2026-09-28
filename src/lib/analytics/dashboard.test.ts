@@ -27,6 +27,7 @@ describe("dashboard model", () => {
     });
     expect(model.availableMonths).toEqual(["2026-09", "2026-08", "2026-07"]);
     expect(model.summary.spend).toBe(12_000);
+    expect(model.headline).toBe("8월에 ₩12,000 썼어요. 기타가 100%로 가장 많아요.");
     expect(model.uploadBannerMonth).toBeNull();
   });
 });

@@ -1,4 +1,5 @@
 import { summarizeMonth, type MonthSummary } from "@/lib/analytics/month";
+import { monthHeadline } from "@/lib/analytics/headline";
 import { isYearMonth, prevMonth, toYearMonth } from "@/lib/domain/month";
 import type { IsoDate, TxView, YearMonth } from "@/lib/domain/types";
 
@@ -6,6 +7,7 @@ export interface DashboardModel {
   month: YearMonth;
   availableMonths: YearMonth[];
   summary: MonthSummary;
+  headline: string | null;
   uploadBannerMonth: YearMonth | null;
 }
 
@@ -24,5 +26,12 @@ export function buildDashboardModel(i: { txs: TxView[]; month: YearMonth; availa
   const availableMonths = [...i.availableMonths].sort((a, b) => b.localeCompare(a));
   const latest = availableMonths[0];
   if (!latest) throw new RangeError("Dashboard requires an available month");
-  return { month: i.month, availableMonths, summary: summarizeMonth(i.txs, i.month), uploadBannerMonth: uploadBannerMonth(latest, i.today) };
+  const summary = summarizeMonth(i.txs, i.month);
+  return {
+    month: i.month,
+    availableMonths,
+    summary,
+    headline: monthHeadline(summary),
+    uploadBannerMonth: uploadBannerMonth(latest, i.today),
+  };
 }
