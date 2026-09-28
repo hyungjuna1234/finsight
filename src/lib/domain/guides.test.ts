@@ -29,6 +29,14 @@ describe("ISSUER_GUIDES", () => {
       ),
     ).toBe(true);
   });
+
+  it("모든 카드사에 이용내역과 최근 3개월 안내를 제공한다", () => {
+    for (const guide of ISSUER_GUIDES) {
+      expect(guide.steps[1]).toContain("이용내역");
+      expect(guide.steps[2]).toContain("최근 3개월");
+      expect(guide.steps).toHaveLength(4);
+    }
+  });
 });
 
 describe("TROUBLESHOOTING", () => {

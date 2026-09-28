@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { trackEvent } from "@/components/ui/track";
 
 export function CopyLinkButton({ path, label }: { path: string; label: string }) {
   const [copied, setCopied] = useState(false);
@@ -16,6 +17,7 @@ export function CopyLinkButton({ path, label }: { path: string; label: string })
     try {
       if (!navigator.clipboard) throw new Error("CLIPBOARD_UNAVAILABLE");
       await navigator.clipboard.writeText(url);
+      trackEvent("link_copy", {});
       setCopied(true);
       setFallbackUrl(null);
     } catch {

@@ -1,7 +1,13 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IssuerGuide } from "@/lib/domain/guides";
 import { IssuerGuideList } from "./issuer-guide-list";
+
+const { trackEvent } = vi.hoisted(() => ({ trackEvent: vi.fn() }));
+vi.mock("@/components/ui/track", () => ({ trackEvent }));
+
+beforeEach(() => vi.clearAllMocks());
 
 const guides: readonly IssuerGuide[] = [
   {
@@ -34,5 +40,19 @@ describe("IssuerGuideList", () => {
     render(<IssuerGuideList guides={guides} />);
     expect(screen.getByText("마지막 확인 2026-09-27")).toBeInTheDocument();
     expect(screen.getAllByText(/마지막 확인/)).toHaveLength(1);
+  });
+
+  it("카드사 안내를 열 때만 guide_open 이벤트를 보낸다", async () => {
+    const user = userEvent.setup();
+    render(<IssuerGuideList guides={guides} />);
+
+    await user.click(screen.getByText("신한카드"));
+    expect(trackEvent).toHaveBeenCalledWith("guide_open", {
+      issuer: "shinhan",
+      where: "guide",
+    });
+
+    await user.click(screen.getByText("신한카드"));
+    expect(trackEvent).toHaveBeenCalledTimes(1);
   });
 });

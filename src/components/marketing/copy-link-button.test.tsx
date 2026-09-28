@@ -3,6 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CopyLinkButton } from "./copy-link-button";
 
+const { trackEvent } = vi.hoisted(() => ({ trackEvent: vi.fn() }));
+vi.mock("@/components/ui/track", () => ({ trackEvent }));
+
 describe("CopyLinkButton", () => {
   afterEach(() => vi.restoreAllMocks());
 
@@ -20,6 +23,8 @@ describe("CopyLinkButton", () => {
 
     expect(writeText).toHaveBeenCalledWith("http://localhost:3000/upload");
     expect(screen.getByText("링크를 복사했어요")).toBeInTheDocument();
+    expect(trackEvent).toHaveBeenCalledOnce();
+    expect(trackEvent).toHaveBeenCalledWith("link_copy", {});
   });
 
   it("클립보드를 쓸 수 없으면 선택된 읽기 전용 주소를 표시한다", async () => {
@@ -40,5 +45,6 @@ describe("CopyLinkButton", () => {
     expect(input).toHaveValue("http://localhost:3000/upload");
     expect(input).toHaveAttribute("readonly");
     expect(select).toHaveBeenCalled();
+    expect(trackEvent).not.toHaveBeenCalled();
   });
 });

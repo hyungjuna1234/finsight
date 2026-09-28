@@ -1,10 +1,15 @@
+"use client";
+
+import { trackEvent } from "@/components/ui/track";
 import type { IssuerGuide } from "@/lib/domain/guides";
 
 export function IssuerGuideList({ guides }: { guides: readonly IssuerGuide[] }) {
   return <div>
     <p className="text-sm leading-relaxed text-muted">메뉴 위치는 카드사 사정에 따라 바뀔 수 있어요.</p>
     <div className="mt-3 border-t border-line">
-      {guides.map((guide) => <details key={guide.id} className="border-b border-line py-4">
+      {guides.map((guide) => <details key={guide.id} className="border-b border-line py-4" onToggle={(event) => {
+        if (event.currentTarget.open) trackEvent("guide_open", { issuer: guide.id, where: "guide" });
+      }}>
         <summary className="cursor-pointer text-sm font-medium text-ink">{guide.name}</summary>
         <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-body">
           {guide.steps.map((step) => <li key={step}>{step}</li>)}
