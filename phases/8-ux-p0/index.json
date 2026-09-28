@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "journey-query",
-      "status": "pending"
+      "status": "completed",
+      "summary": "인증·동의·플랜과 Pro 리포트 존재 여부를 RLS 세션으로 조회해 Journey를 계산하는 getJourney 쿼리를 추가함",
+      "started_at": "2026-09-28T23:40:48+0900",
+      "completed_at": "2026-09-28T23:44:35+0900"
     },
     {
       "step": 3,
