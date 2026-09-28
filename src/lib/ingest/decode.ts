@@ -35,13 +35,6 @@ function bomEncoding(bytes: Uint8Array): { encoding: TextEncoding; length: numbe
   return null;
 }
 
-function declaredEncoding(charset: string | null | undefined): "utf-8" | "cp949" | null {
-  const normalized = charset?.trim().toLowerCase().replace(/["']/g, "") ?? "";
-  if (["euc-kr", "ks_c_5601-1987", "cp949", "x-windows-949"].includes(normalized)) return "cp949";
-  if (["utf-8", "utf8"].includes(normalized)) return "utf-8";
-  return null;
-}
-
 function validCp949(text: string): boolean {
   const replacements = [...text].filter((character) => character === "\uFFFD").length;
   return replacements < 10 && (text.length === 0 || replacements / text.length <= 0.01);
@@ -50,25 +43,22 @@ function validCp949(text: string): boolean {
 export function decodeText(
   bytes: Uint8Array,
   encoding: TextEncoding | null,
-  declaredCharset?: string | null,
 ): Result<string, "ENCODING_ERROR"> {
   const bom = bomEncoding(bytes);
   const source = bytes.subarray(bom?.length ?? 0);
-  const selected = bom?.encoding ?? encoding ?? declaredEncoding(declaredCharset);
-  try {
-    if (selected === "cp949") {
-      const text = iconv.decode(Buffer.from(source), "cp949");
-      return validCp949(text) ? ok(text) : err("ENCODING_ERROR");
-    }
-    if (selected) return ok(new TextDecoder(selected, { fatal: true }).decode(source));
+  const selected = bom?.encoding ?? encoding;
+  if (selected) {
     try {
-      return ok(new TextDecoder("utf-8", { fatal: true }).decode(source));
+      return ok(new TextDecoder(selected, { fatal: true }).decode(source));
     } catch {
-      const text = iconv.decode(Buffer.from(source), "cp949");
-      return validCp949(text) ? ok(text) : err("ENCODING_ERROR");
+      return err("ENCODING_ERROR");
     }
+  }
+  try {
+    return ok(new TextDecoder("utf-8", { fatal: true }).decode(source));
   } catch {
-    return err("ENCODING_ERROR");
+    const text = iconv.decode(Buffer.from(source), "cp949");
+    return validCp949(text) ? ok(text) : err("ENCODING_ERROR");
   }
 }
 
@@ -137,14 +127,6 @@ export function parseDelimited(text: string, delimiter: string): string[][] {
   return rows;
 }
 
-function findDeclaredCharset(bytes: Uint8Array): string | null {
-  const ascii = Array.from(bytes.subarray(0, 8192), (byte) => String.fromCharCode(byte)).join("");
-  return ascii.match(/<meta\b[^>]*charset\s*=\s*["']?\s*([^\s"'/>;]+)/i)?.[1]
-    ?? ascii.match(/<meta\b[^>]*content\s*=\s*["'][^"']*charset\s*=\s*([^\s"';>]+)/i)?.[1]
-    ?? ascii.match(/<\?xml\b[^>]*encoding\s*=\s*["']([^"']+)/i)?.[1]
-    ?? null;
-}
-
 function trimTrailingEmptyRows(rows: string[][]): string[][] {
   while (rows.length > 0 && rows.at(-1)!.every((cell) => cell === "")) rows.pop();
   return rows;
@@ -190,11 +172,11 @@ export function decodeFile(bytes: Uint8Array, sniff: Sniff): Result<Sheet[], Dec
   try {
     const workbook = sniff.kind === "html" || sniff.kind === "xml"
       ? (() => {
-          const decoded = decodeText(bytes, sniff.encoding, findDeclaredCharset(bytes));
+          const decoded = decodeText(bytes, sniff.encoding);
           if (!decoded.ok) return decoded;
           return XLSX.read(decoded.value, { type: "string", raw: true, dense: true, sheetRows: 10001 });
         })()
-      : XLSX.read(bytes, { type: "array", dense: true, sheetRows: 10001 });
+      : XLSX.read(bytes, { type: "array", dense: true, sheetRows: 10001, dateNF: "yyyy-mm-dd" });
     if ("ok" in workbook && workbook.ok === false) return workbook;
     return workbookToSheets(workbook as XLSX.WorkBook);
   } catch (error) {

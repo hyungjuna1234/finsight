@@ -1,5 +1,7 @@
 import { allFixtures, getFixture } from "@/test/fixtures/statements";
+import iconv from "iconv-lite";
 import { describe, expect, it } from "vitest";
+import * as XLSX from "xlsx";
 
 import { decodeFile, decodeText, normalizeCell, parseDelimited, sniffDelimiter } from "./decode";
 import { sniffFile, type Sniff } from "./sniff";
@@ -12,6 +14,45 @@ function sniffFixture(name: string): { bytes: Uint8Array; sniff: Sniff } {
 }
 
 describe("decodeFile", () => {
+  it("ignores a mismatched EUC-KR declaration in UTF-8 HTML", () => {
+    const html = '<html><head><meta charset="euc-kr"></head><body><table><tr><td>한글</td></tr></table></body></html>';
+    const decoded = decodeFile(new TextEncoder().encode(html), {
+      kind: "html",
+      extension: "xls",
+      encoding: null,
+    });
+
+    expect(decoded.ok && decoded.value[0]?.rows[0]?.[0]).toBe("한글");
+  });
+
+  it("ignores a mismatched UTF-8 declaration in CP949 HTML", () => {
+    const html = '<html><head><meta charset="utf-8"></head><body><table><tr><td>한글</td></tr></table></body></html>';
+    const decoded = decodeFile(new Uint8Array(iconv.encode(html, "cp949")), {
+      kind: "html",
+      extension: "xls",
+      encoding: null,
+    });
+
+    expect(decoded.ok && decoded.value[0]?.rows[0]?.[0]).toBe("한글");
+  });
+
+  it("formats built-in and explicit short dates as ISO dates", () => {
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet([
+      [{ t: "n", v: 45574, z: XLSX.SSF.get_table()[14] }],
+      [{ t: "n", v: 45580, z: "m/d/yy" }],
+    ]);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "이용내역");
+    const bytes = new Uint8Array(XLSX.write(workbook, { type: "array", bookType: "xlsx" }));
+
+    const decoded = decodeFile(bytes, { kind: "xlsx", extension: "xlsx", encoding: null });
+
+    expect(decoded.ok && decoded.value[0]?.rows).toEqual([
+      ["2024-10-09"],
+      ["2024-10-15"],
+    ]);
+  });
+
   for (const fixture of allFixtures({ heavy: true })) {
     if (fixture.expect.error?.stage === "decode") {
       it(`rejects ${fixture.name} with ${fixture.expect.error.code}`, () => {
