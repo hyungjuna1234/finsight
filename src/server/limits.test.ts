@@ -4,7 +4,7 @@ const from = vi.fn();
 vi.mock("@/services/supabase/server", () => ({ createServerSupabase: async () => ({ from }) }));
 vi.mock("@/server/logger", () => ({ logger: { warn: vi.fn() } }));
 
-import { assertDailyLimit, kstDayStart, recordAiUsage } from "./limits";
+import { assertDailyLimit, kstDayStart, recordAiUsage, remainingDailyQuota } from "./limits";
 
 describe("upload limits", () => {
   beforeEach(() => from.mockReset());
@@ -19,6 +19,26 @@ describe("upload limits", () => {
     query.eq.mockReturnValue(query);
     from.mockReturnValue(query);
     await expect(assertDailyLimit("u", "uploads")).rejects.toMatchObject({ code: "RATE_LIMITED" });
+  });
+
+  it("returns the remaining daily quota without going below zero", async () => {
+    const query = { select: vi.fn(), eq: vi.fn(), gte: vi.fn(async () => ({ count: 32, error: null })) };
+    query.select.mockReturnValue(query);
+    query.eq.mockReturnValue(query);
+    from.mockReturnValue(query);
+
+    await expect(remainingDailyQuota("u", "uploads")).resolves.toBe(0);
+  });
+
+  it("counts classify usage from ai_usage with the classify feature", async () => {
+    const query = { select: vi.fn(), eq: vi.fn(), gte: vi.fn(async () => ({ count: 4, error: null })) };
+    query.select.mockReturnValue(query);
+    query.eq.mockReturnValue(query);
+    from.mockReturnValue(query);
+
+    await expect(remainingDailyQuota("u", "classify")).resolves.toBe(96);
+    expect(from).toHaveBeenCalledWith("ai_usage");
+    expect(query.eq).toHaveBeenCalledWith("feature", "classify");
   });
 
   it("records normalized Claude usage", async () => {

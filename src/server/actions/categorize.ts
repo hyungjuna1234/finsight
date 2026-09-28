@@ -4,6 +4,7 @@ import { DEFAULT_CATEGORY, isCategory, type Category } from "@/lib/domain/catego
 import { AppError } from "@/lib/domain/errors";
 import type { CategorySource } from "@/lib/domain/types";
 import { categorizeByRule } from "@/lib/ingest/rules";
+import { remainingDailyQuota } from "@/server/limits";
 import { logger } from "@/server/logger";
 import { classify } from "@/services/claude/classifier";
 import type { ClaudeUsage } from "@/services/claude/models";
@@ -13,6 +14,7 @@ export interface CategorizeResult {
   byKey: Map<string, { category: Category; source: CategorySource }>;
   usage: ClaudeUsage[];
   aiFailed: boolean;
+  rateLimited: boolean;
 }
 
 const BATCH_SIZE = 100;
@@ -72,8 +74,16 @@ export async function categorizeTransactions(
 
   const aiKeys = keys.filter((key) => !byKey.has(key));
   const aiBatches = batches(aiKeys);
-  for (let batchIndex = 0; batchIndex < aiBatches.length; batchIndex += 1) {
-    const chunk = aiBatches[batchIndex]!;
+  if (aiBatches.length === 0) return { byKey, usage, aiFailed: false, rateLimited: false };
+
+  const remainingBatches = await remainingDailyQuota(userId, "classify");
+  const allowedBatches = aiBatches.slice(0, remainingBatches);
+  const limitedKeys = aiBatches.slice(remainingBatches).flat();
+  for (const key of limitedKeys) byKey.set(key, { category: DEFAULT_CATEGORY, source: "pending" });
+  if (limitedKeys.length > 0) logger.info("categorize.rate_limited", { keys: limitedKeys.length });
+
+  for (let batchIndex = 0; batchIndex < allowedBatches.length; batchIndex += 1) {
+    const chunk = allowedBatches[batchIndex]!;
     try {
       const result = await classify(chunk);
       usage.push(result.usage);
@@ -81,12 +91,12 @@ export async function categorizeTransactions(
         byKey.set(key, { category: result.categories.get(key) ?? DEFAULT_CATEGORY, source: "ai" });
       }
     } catch {
-      const failedKeys = aiBatches.slice(batchIndex).flat();
+      const failedKeys = allowedBatches.slice(batchIndex).flat();
       for (const key of failedKeys) byKey.set(key, { category: DEFAULT_CATEGORY, source: "pending" });
       logger.warn("categorize.ai_failed", { keys: failedKeys.length });
-      return { byKey, usage, aiFailed: true };
+      return { byKey, usage, aiFailed: true, rateLimited: limitedKeys.length > 0 };
     }
   }
 
-  return { byKey, usage, aiFailed: false };
+  return { byKey, usage, aiFailed: false, rateLimited: limitedKeys.length > 0 };
 }

@@ -2,15 +2,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ClaudeUsage } from "@/services/claude/models";
 
-const { classify, createServerSupabase, warn } = vi.hoisted(() => ({
+const { classify, createServerSupabase, info, remainingDailyQuota, warn } = vi.hoisted(() => ({
   classify: vi.fn(),
   createServerSupabase: vi.fn(),
+  info: vi.fn(),
+  remainingDailyQuota: vi.fn(),
   warn: vi.fn(),
 }));
 
 vi.mock("@/services/claude/classifier", () => ({ classify }));
 vi.mock("@/services/supabase/server", () => ({ createServerSupabase }));
-vi.mock("@/server/logger", () => ({ logger: { warn } }));
+vi.mock("@/server/limits", () => ({ remainingDailyQuota }));
+vi.mock("@/server/logger", () => ({ logger: { info, warn } }));
 
 import { categorizeTransactions } from "@/server/actions/categorize";
 
@@ -46,6 +49,9 @@ describe("categorizeTransactions", () => {
   beforeEach(() => {
     classify.mockReset();
     createServerSupabase.mockReset();
+    info.mockReset();
+    remainingDailyQuota.mockReset();
+    remainingDailyQuota.mockResolvedValue(100);
     warn.mockReset();
   });
 
@@ -113,5 +119,44 @@ describe("categorizeTransactions", () => {
     expect(result.byKey.get("미지 상점 100")).toEqual({ category: "기타", source: "pending" });
     expect(result.byKey.get("미지 상점 249")).toEqual({ category: "기타", source: "pending" });
     expect(warn).toHaveBeenCalledWith("categorize.ai_failed", { keys: 150 });
+  });
+
+  it("남은 분류 상한이 0이면 AI를 호출하지 않고 모두 pending으로 둔다", async () => {
+    createServerSupabase.mockResolvedValue(fakeClient([], []).client);
+    remainingDailyQuota.mockResolvedValue(0);
+
+    const result = await categorizeTransactions("user-1", [{ merchantKey: "미지 상점" }]);
+
+    expect(classify).not.toHaveBeenCalled();
+    expect(result.byKey.get("미지 상점")).toEqual({ category: "기타", source: "pending" });
+    expect(result.rateLimited).toBe(true);
+    expect(info).toHaveBeenCalledWith("categorize.rate_limited", { keys: 1 });
+  });
+
+  it("남은 분류 상한이 1이면 세 배치 중 한 배치만 호출한다", async () => {
+    createServerSupabase.mockResolvedValue(fakeClient([], []).client);
+    remainingDailyQuota.mockResolvedValue(1);
+    classify.mockImplementation(async (keys: string[]) => ({
+      categories: new Map(keys.map((key) => [key, "기타"])), usage: usage(keys.length),
+    }));
+    const rows = Array.from({ length: 250 }, (_, i) => ({ merchantKey: `미지 상점 ${i}` }));
+
+    const result = await categorizeTransactions("user-1", rows);
+
+    expect(classify).toHaveBeenCalledTimes(1);
+    expect(result.byKey.get("미지 상점 99")).toEqual({ category: "기타", source: "ai" });
+    expect(result.byKey.get("미지 상점 100")).toEqual({ category: "기타", source: "pending" });
+    expect(result.byKey.get("미지 상점 249")).toEqual({ category: "기타", source: "pending" });
+    expect(result.rateLimited).toBe(true);
+    expect(info).toHaveBeenCalledWith("categorize.rate_limited", { keys: 150 });
+  });
+
+  it("AI로 보낼 키가 없으면 분류 상한을 조회하지 않는다", async () => {
+    createServerSupabase.mockResolvedValue(fakeClient([{ merchant_key: "쿠팡", category: "쇼핑" }], []).client);
+
+    const result = await categorizeTransactions("user-1", [{ merchantKey: "쿠팡" }]);
+
+    expect(result.byKey.get("쿠팡")).toEqual({ category: "쇼핑", source: "user" });
+    expect(remainingDailyQuota).not.toHaveBeenCalled();
   });
 });

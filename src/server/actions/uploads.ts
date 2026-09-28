@@ -125,10 +125,10 @@ function savedResult(upload: UploadRow, pending: number): ConfirmResponse {
   return { inserted: Number(raw.inserted ?? 0), duplicates: Number(raw.duplicates ?? 0), pending, period: upload.period_from && upload.period_to ? { from: upload.period_from as IsoDate, to: upload.period_to as IsoDate } : null };
 }
 
-async function categorizePending(userId: string, uploadId: string): Promise<{ updated: number; pending: number; aiFailed: boolean }> {
+async function categorizePending(userId: string, uploadId: string): Promise<{ updated: number; pending: number; aiFailed: boolean; rateLimited: boolean }> {
   const supabase = await createServerSupabase();
   const { data: pendingRows, error } = await supabase.from("transactions").select("merchant_key").eq("user_id", userId).eq("upload_id", uploadId).eq("category_source", "pending"); db(error);
-  if (!pendingRows?.length) return { updated: 0, pending: 0, aiFailed: false };
+  if (!pendingRows?.length) return { updated: 0, pending: 0, aiFailed: false, rateLimited: false };
   const result = await categorizeTransactions(userId, pendingRows.map((row) => ({ merchantKey: row.merchant_key })));
   for (const usage of result.usage) await recordAiUsage(userId, "classify", usage);
   let updated = 0;
@@ -140,7 +140,7 @@ async function categorizePending(userId: string, uploadId: string): Promise<{ up
   for (const group of groups.values()) for (const part of chunks(group.keys, 100)) {
     const { data, error: updateError } = await supabase.from("transactions").update({ category: group.category, category_source: group.source }).eq("user_id", userId).eq("upload_id", uploadId).eq("category_source", "pending").in("merchant_key", part).select("id"); db(updateError); updated += data?.length ?? 0;
   }
-  return { updated, pending: await pendingCount(userId, uploadId), aiFailed: result.aiFailed };
+  return { updated, pending: await pendingCount(userId, uploadId), aiFailed: result.aiFailed, rateLimited: result.rateLimited };
 }
 
 export async function confirmUpload(userId: string, uploadId: string, input: z.infer<typeof confirmUploadBody>): Promise<ConfirmResponse> {
@@ -165,7 +165,7 @@ export async function confirmUpload(userId: string, uploadId: string, input: z.i
 export async function recategorizeUpload(userId: string, uploadId: string): Promise<RecategorizeResponse> {
   const upload = await getUpload(userId, uploadId); if (upload.status !== "done") fail("INVALID_STATE"); const result = await categorizePending(userId, uploadId);
   const raw = upload.counts && typeof upload.counts === "object" && !Array.isArray(upload.counts) ? upload.counts : {}; const supabase = await createServerSupabase();
-  const { error } = await supabase.from("uploads").update({ counts: { ...raw, pending: result.pending } }).eq("user_id", userId).eq("id", uploadId); db(error); if (result.aiFailed) fail("AI_UNAVAILABLE"); return { updated: result.updated, pending: result.pending };
+  const { error } = await supabase.from("uploads").update({ counts: { ...raw, pending: result.pending } }).eq("user_id", userId).eq("id", uploadId); db(error); if (result.aiFailed) fail("AI_UNAVAILABLE"); if (result.rateLimited) fail("RATE_LIMITED"); return { updated: result.updated, pending: result.pending };
 }
 
 export async function deleteUpload(userId: string, uploadId: string): Promise<void> {

@@ -115,7 +115,7 @@ POST /api/uploads/:id/analyze   (maxDuration 60)
 POST /api/uploads/:id/confirm {mapping, card}   (maxDuration 120)
   → sha256 재확인 → parseRows → transactions upsert(onConflict user_id,identity_key)
   → header_mappings 저장 → 분류: override → 같은 가맹점 이전 거래 → categorizeByRule → claude.classify(100개씩)
-  → Claude 실패분은 category='기타', category_source='pending' → status=done → {inserted, duplicates, pending, period}
+  → Claude 실패분과 분류 상한을 넘은 가맹점은 category='기타', category_source='pending' → status=done → {inserted, duplicates, pending, period}
 POST /api/uploads/:id/recategorize → pending만 다시 분류
 DELETE /api/uploads/:id → 이 업로드의 거래(upload_id cascade)와 원본 삭제
 GET /api/cron/cleanup (매일) → 90일 지난 원본 삭제(original_deleted_at 기록), 24시간 넘은 uploaded 상태 업로드·파일 삭제
@@ -202,7 +202,7 @@ polar: createCheckout · getCheckout · createPortalSession · getCustomerState 
 | `ai_usage` | id, user_id, feature(`mapping`,`classify`,`insight`,`chat`), model, input_tokens, output_tokens, created_at · INDEX(user_id, feature, created_at) | SELECT·INSERT 본인 (UPDATE·DELETE 없음) |
 - 정책은 `(select auth.uid()) = user_id` 형태. 모든 user_id FK는 `auth.users` on delete cascade(탈퇴 시 일괄 삭제).
 - Storage: 비공개 버킷 `statements`, 10MB 제한, **사용자 정책 없음**(서버가 admin으로만 접근). 경로 `{uid}/{uploadId}/original`.
-- 일일 상한(`server/limits.ts`): 오늘(KST) 행 수를 센다 — 업로드 30(uploads), 매핑 30·인사이트 10·채팅 30(ai_usage).
+- 일일 상한(`server/limits.ts`): 오늘(KST) 행 수를 센다 — 업로드 30(uploads), 매핑 30·분류 100(배치)·인사이트 10·채팅 30(ai_usage).
 - 테스트: `supabase/tests`에서 PGlite로 마이그레이션을 적용하고 `auth.uid()`를 stub한 뒤 `SET ROLE authenticated`로 격리를 검증한다.
 
 ## 외부 SDK 메모 (설치된 버전 기준 — 쓰기 전에 node_modules의 README/타입을 확인)
