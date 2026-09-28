@@ -29,7 +29,10 @@
     {
       "step": 3,
       "name": "landing-tiles",
-      "status": "pending"
+      "status": "completed",
+      "summary": "데모 집계값으로 정기결제·전월 증가·주말 비율·상위 카테고리를 보여 주는 접근 가능한 반응형 랜딩 타일을 구현",
+      "started_at": "2026-09-28T22:38:52+0900",
+      "completed_at": "2026-09-28T22:43:28+0900"
     },
     {
       "step": 4,
