@@ -298,7 +298,7 @@ export interface Journey {
 
 | # | 내용 | 주요 파일 | 지표 |
 |---|---|---|---|
-| **P0** | | | |
+| **P0** (phase `8-ux-p0`) | | | |
 | B1 | 대시보드 accent 1개: ProLock 버튼을 Text 링크 "Pro에서 보기"로 바꾸고, 전환 버튼은 Pro 영역에 하나만 | `pro/pro-lock.tsx`, `pro/pro-teasers.tsx`, `*-teaser.tsx` | H5 |
 | B2 | 시작 체크리스트와 `journey.ts`(§5). `UploadBanner`를 `primary`에 맞춘다 | `lib/domain/journey.ts`, `dashboard/start-checklist.tsx`, `server/queries/dashboard.ts` | H1 · H5 · H9 |
 | B3 | 받는 법에 "최근 3개월"과 "'이용내역' ≠ 청구서" 추가, 업로드 화면 안에 받는 법 펼침, 좁은 화면에서 PC 링크 먼저 | `lib/domain/guides.ts`, `upload/upload-flow.tsx`, `marketing/issuer-guide-list.tsx` | H1 · H2 |

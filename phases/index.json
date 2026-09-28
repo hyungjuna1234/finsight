@@ -39,6 +39,10 @@
       "dir": "7-landing",
       "status": "completed",
       "completed_at": "2026-09-28T23:05:39+0900"
+    },
+    {
+      "dir": "8-ux-p0",
+      "status": "pending"
     }
   ]
 }
