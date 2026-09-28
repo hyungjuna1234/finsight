@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { ApiError, apiFetch } from "@/components/ui/api-fetch";
+import { trackEvent } from "@/components/ui/track";
 import { OnboardingSteps } from "@/components/ui/onboarding-steps";
 import { CopyLinkButton } from "@/components/marketing/copy-link-button";
 import type { IssuerGuide } from "@/lib/domain/guides";
@@ -23,13 +24,23 @@ function asApiError(error: unknown): ApiError { return error instanceof ApiError
 export function UploadFlow({ cards, hasUploads, guides }: { cards: { id: string; name: string }[]; hasUploads: boolean; guides: readonly IssuerGuide[] }) {
   const [card, setCard] = useState<CardChoice | null>(cards[0] ? { id: cards[0].id } : { name: "" });
   const [items, setItems] = useState<Item[]>([]); const [running, setRunning] = useState(false); const nextKey = useRef(0);
+  const completedCount = useRef(0);
   const update = (key: number, value: Partial<Item>) => setItems((all) => all.map((item) => item.key === key ? { ...item, ...value } : item));
   const validCard = card && ("id" in card || card.name.trim().length > 0);
 
+  function trackDone(auto: boolean) {
+    trackEvent("upload_done", { auto, first: !hasUploads && completedCount.current === 0 });
+    completedCount.current += 1;
+  }
+  function trackError(error: unknown) {
+    const apiError = asApiError(error);
+    trackEvent("upload_error", { code: apiError.code });
+    return apiError;
+  }
   async function finish(key: number, uploadId: string, mapping: ColumnMapping) {
     update(key, { stage: "confirming" });
-    try { const result = await confirmFile(uploadId, mapping, card!, deps); update(key, { stage: "done", result }); }
-    catch (error) { update(key, { stage: "error", error: asApiError(error) }); }
+    try { const result = await confirmFile(uploadId, mapping, card!, deps); update(key, { stage: "done", result }); trackDone(true); }
+    catch (error) { update(key, { stage: "error", error: trackError(error) }); }
   }
   async function run(files: File[]) {
     if (!validCard || running) return;
@@ -44,15 +55,15 @@ export function UploadFlow({ cards, hasUploads, guides }: { cards: { id: string;
           update(item.key, { stage: "review" });
           await new Promise<void>((resolve) => { reviewResolvers.current.set(item.key, resolve); });
         }
-      } catch (error) { update(item.key, { stage: "error", error: asApiError(error) }); }
+      } catch (error) { update(item.key, { stage: "error", error: trackError(error) }); }
     }
     setRunning(false);
   }
   const reviewResolvers = useRef(new Map<number, () => void>());
   async function reviewSubmit(item: Item, mapping: ColumnMapping, selectedCard: CardChoice) {
     setCard(selectedCard); update(item.key, { stage: "confirming" });
-    try { const result = await confirmFile(item.uploadId!, mapping, selectedCard, deps); update(item.key, { stage: "done", result }); }
-    catch (error) { update(item.key, { stage: "error", error: asApiError(error) }); }
+    try { const result = await confirmFile(item.uploadId!, mapping, selectedCard, deps); update(item.key, { stage: "done", result }); trackDone(false); }
+    catch (error) { update(item.key, { stage: "error", error: trackError(error) }); }
     reviewResolvers.current.get(item.key)?.(); reviewResolvers.current.delete(item.key);
   }
   async function recategorize(item: Item) {

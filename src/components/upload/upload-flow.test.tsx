@@ -1,8 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-const { apiMock, startMock, confirmMock } = vi.hoisted(() => ({ apiMock: vi.fn(), startMock: vi.fn(), confirmMock: vi.fn() }));
+const { apiMock, startMock, confirmMock, trackEvent } = vi.hoisted(() => ({ apiMock: vi.fn(), startMock: vi.fn(), confirmMock: vi.fn(), trackEvent: vi.fn() }));
 vi.mock("@/components/ui/api-fetch", async (load) => ({ ...(await load<typeof import("@/components/ui/api-fetch")>()), apiFetch: apiMock }));
+vi.mock("@/components/ui/track", () => ({ trackEvent }));
 vi.mock("./upload-pipeline", async (load) => ({ ...(await load<typeof import("./upload-pipeline")>()), startFile: startMock, confirmFile: confirmMock, sha256Hex: vi.fn(), putFile: vi.fn() }));
 import { UploadFlow } from "./upload-flow";
 import { ISSUER_GUIDES } from "@/lib/domain/guides";
@@ -37,6 +38,20 @@ it("두 파일을 첫 확정 뒤 두 번째 생성 순서로 처리한다", asyn
   expect(startMock).toHaveBeenCalledTimes(2);
   expect(confirmMock.mock.invocationCallOrder[0]).toBeLessThan(startMock.mock.invocationCallOrder[1]!);
   expect(screen.queryByText("열 이름이 맞는지 확인해 주세요.")).not.toBeInTheDocument();
+  expect(trackEvent).toHaveBeenNthCalledWith(1, "upload_done", { auto: true, first: false });
+  expect(trackEvent).toHaveBeenNthCalledWith(2, "upload_done", { auto: true, first: false });
+});
+
+it("첫 방문의 첫 수동 완료만 first로 기록한다", async () => {
+  const user = userEvent.setup();
+  startMock.mockResolvedValue({ uploadId: "u1", analysis: { ...analysis, autoConfirm: false } });
+  render(<UploadFlow cards={[]} hasUploads={false} guides={ISSUER_GUIDES} />);
+  await user.type(screen.getByLabelText("새 카드 이름"), "신한");
+  await user.upload(screen.getByLabelText("카드 이용내역 파일 선택"), new File(["a"], "a.csv"));
+  await user.click(await screen.findByRole("button", { name: "저장하고 분석" }));
+  await screen.findByText(/1건 추가/);
+  expect(trackEvent).toHaveBeenCalledOnce();
+  expect(trackEvent).toHaveBeenCalledWith("upload_done", { auto: false, first: true });
 });
 
 it("수동 리뷰에서 멈춘 뒤 제출하면 다음 파일을 처리한다", async () => {
@@ -61,4 +76,19 @@ it("첫 파일 오류 뒤에도 다음 파일을 처리한다", async () => {
   await user.upload(screen.getByLabelText("카드 이용내역 파일 선택"), [new File(["a"], "a.csv"), new File(["b"], "b.csv")]);
   expect(await screen.findByText(/암호가 걸린 파일/)).toBeInTheDocument();
   expect(await screen.findByText(/1건 추가/)).toBeInTheDocument();
+  expect(trackEvent).toHaveBeenCalledWith("upload_error", { code: "ENCRYPTED_FILE" });
+  expect(trackEvent).toHaveBeenCalledWith("upload_done", { auto: true, first: false });
+});
+
+it("확정 실패는 에러만 기록한다", async () => {
+  const user = userEvent.setup();
+  const { ApiError } = await import("@/components/ui/api-fetch");
+  startMock.mockResolvedValue({ uploadId: "u1", analysis });
+  confirmMock.mockRejectedValue(new ApiError("NETWORK", 0, "unsafe"));
+  render(<UploadFlow cards={[]} hasUploads guides={ISSUER_GUIDES} />);
+  await user.type(screen.getByLabelText("새 카드 이름"), "신한");
+  await user.upload(screen.getByLabelText("카드 이용내역 파일 선택"), new File(["a"], "a.csv"));
+  expect(await screen.findByText(/네트워크/)).toBeInTheDocument();
+  expect(trackEvent).toHaveBeenCalledOnce();
+  expect(trackEvent).toHaveBeenCalledWith("upload_error", { code: "NETWORK" });
 });

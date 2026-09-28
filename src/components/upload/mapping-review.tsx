@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { trackEvent } from "@/components/ui/track";
 import type { CardChoice, UploadPreview } from "@/lib/domain/upload";
 import type { ColumnMapping } from "@/lib/ingest/mapping";
 import { CardField } from "./card-field";
@@ -13,6 +14,7 @@ export function MappingReview({ preview, mapping, cards, defaultCard, submitting
   const [columns, setColumns] = useState<ColumnMapping["columns"]>(mapping?.columns ?? { date: 0, merchant: 1, amount: 2 });
   const [card, setCard] = useState<CardChoice | null>(defaultCard ?? (cards[0] ? { id: cards[0].id } : { name: "" }));
   const [more, setMore] = useState(false);
+  const changeTracked = useRef(false);
   const headers = preview.rows[headerRowIndex] ?? [];
   useEffect(() => {
     setColumns((current) => {
@@ -28,7 +30,13 @@ export function MappingReview({ preview, mapping, cards, defaultCard, submitting
   </label>;
   const requiredDistinct = new Set([columns.date, columns.merchant, columns.amount]).size === 3;
   const cardValid = card && ("id" in card || card.name.trim().length >= 1 && card.name.trim().length <= 30);
-  function submit(event: FormEvent) { event.preventDefault(); if (requiredDistinct && cardValid) onSubmit({ headerRowIndex, columns }, "name" in card! ? { name: card.name.trim() } : card!); }
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!requiredDistinct || !cardValid) return;
+    const changed = mapping !== null && (mapping.headerRowIndex !== headerRowIndex || Object.keys({ ...mapping.columns, ...columns }).some((key) => mapping.columns[key as ColumnKey] !== columns[key as ColumnKey]));
+    if (changed && !changeTracked.current) { trackEvent("mapping_changed", {}); changeTracked.current = true; }
+    onSubmit({ headerRowIndex, columns }, "name" in card! ? { name: card.name.trim() } : card!);
+  }
   const highlighted = new Set(Object.values(columns).filter((v): v is number => v !== undefined));
   return <form onSubmit={submit} className="space-y-5">
     <p className="text-sm leading-relaxed text-body">열 이름이 맞는지 확인해 주세요. 한 번 저장하면 같은 형식은 다음부터 바로 올라가요.</p>
