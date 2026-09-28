@@ -7,11 +7,14 @@ import { HowItWorks } from "./how-it-works";
 import { PricingSummary } from "./pricing-summary";
 import { SiteFooter } from "./site-footer";
 import { SiteHeader } from "./site-header";
-import { TrustPoints } from "./trust-points";
+import { DataFlow } from "./landing/data-flow";
 import { FinalCta } from "./landing/final-cta";
+import { ReportShowcase } from "./landing/report-showcase";
+import { SpendTiles } from "./landing/spend-tiles";
 
 it("follows the marketing anti-slop rules", () => {
-  const { container } = render(<><SiteHeader /><Hero showcase={getLandingShowcase()} /><TrustPoints /><HowItWorks /><PricingSummary /><FAQ /><FinalCta /><SiteFooter /></>);
+  const showcase = getLandingShowcase();
+  const { container } = render(<><SiteHeader /><Hero showcase={showcase} /><SpendTiles showcase={showcase} /><ReportShowcase showcase={showcase} /><HowItWorks /><DataFlow /><PricingSummary /><FAQ /><FinalCta /><SiteFooter /></>);
   const html = container.innerHTML;
   for (const forbidden of ["backdrop-blur", "bg-gradient", "bg-clip-text", "blur-3xl", "rounded-2xl", "purple", "indigo", "violet"]) {
     expect(html).not.toContain(forbidden);
