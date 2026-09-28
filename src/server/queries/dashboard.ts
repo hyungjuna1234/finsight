@@ -4,6 +4,8 @@ import { buildDashboardModel, resolveMonth, type DashboardModel } from "@/lib/an
 import { summarizeMonth } from "@/lib/analytics/month";
 import { detectRecurring, RECURRING_LOOKBACK_DAYS } from "@/lib/analytics/recurring";
 import { buildFreePanel, buildProPanel, type ProPanel } from "@/lib/analytics/teasers";
+import { AppError } from "@/lib/domain/errors";
+import { buildJourney, type Journey } from "@/lib/domain/journey";
 import { addDays, kstToday, monthRange, monthsBetween, prevMonth } from "@/lib/domain/month";
 import type { YearMonth } from "@/lib/domain/types";
 import { getPlan, requireConsent, requireUser } from "@/server/auth";
@@ -29,6 +31,32 @@ export async function getHasTransactions(): Promise<boolean> {
   await requireConsent(user.id);
   const sb = await createServerSupabase();
   return (await loadDataMonthSpan(sb, user.id)) !== null;
+}
+
+export async function getJourney(input: { month: YearMonth; monthsWithData: number; staleMonth: YearMonth | null }): Promise<Journey> {
+  const user = await requireUser();
+  await requireConsent(user.id);
+  const plan = await getPlan(user.id);
+  let hasInsightThisMonth = false;
+
+  if (plan.isPro) {
+    const sb = await createServerSupabase();
+    const { count, error } = await sb
+      .from("insights")
+      .select("month", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("month", input.month);
+    if (error) throw new AppError("INTERNAL");
+    hasInsightThisMonth = (count ?? 0) > 0;
+  }
+
+  return buildJourney({
+    isPro: plan.isPro,
+    monthsWithData: input.monthsWithData,
+    freeInsightAvailable: plan.freeInsightAvailable,
+    staleMonth: input.staleMonth,
+    hasInsightThisMonth,
+  });
 }
 
 export async function getProPanel(month: YearMonth): Promise<ProPanel> {
