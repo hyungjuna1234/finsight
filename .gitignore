@@ -15,6 +15,7 @@ coverage/
 test-results/
 playwright-report/
 .DS_Store
+.claude/worktrees/
 
 # phase execution outputs
 phases/**/phase*-output.json
