@@ -37,10 +37,9 @@
     {
       "step": 4,
       "name": "dashboard-view",
-      "status": "error",
+      "status": "completed",
       "started_at": "2026-09-28T23:49:53+0900",
-      "error_message": "[3회 시도 후 실패] Step did not update status",
-      "failed_at": "2026-09-28T23:53:30+0900"
+      "summary": "StartChecklist·UploadBanner(next_step_click)·N월 지출 타일 위계·한 줄 요약·TOP5 아래 수정 안내를 DashboardView에 넣고 dashboard page에서 getJourney와 ProTeasers primary를 연결, 데모 e2e를 '9월 지출'로 갱신(한도로 중단된 1차 시도 산출물을 Claude가 하네스 밖에서 검증: lint·test·build·e2e public-pages 통과)"
     },
     {
       "step": 5,
