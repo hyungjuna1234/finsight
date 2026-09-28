@@ -17,4 +17,8 @@ it("renders the privacy sections and accurate overseas-transfer draft", () => {
   for (const provider of ["Anthropic PBC", "Polar", "Vercel Inc."]) {
     expect(within(table).getByText(new RegExp(provider))).toBeInTheDocument();
   }
+
+  const anthropicRow = within(table).getByText("Anthropic PBC", { exact: true }).closest("tr");
+  expect(anthropicRow).not.toBeNull();
+  expect(within(anthropicRow!).getByText(/최대 30건/)).toBeInTheDocument();
 });

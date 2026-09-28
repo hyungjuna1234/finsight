@@ -13,6 +13,13 @@ describe("consent domain", () => {
     expect(new Set(CONSENT_ITEMS.map(({ kind }) => kind)).size).toBe(4);
   });
 
+  it("discloses the capped chat transaction transfer and excludes card numbers", () => {
+    const overseasTransfer = CONSENT_ITEMS.find(({ kind }) => kind === "overseas_transfer");
+
+    expect(overseasTransfer?.summary).toContain("최대 30건");
+    expect(overseasTransfer?.summary).toContain("카드번호는 보내지 않아요");
+  });
+
   it("accepts only agreements from the current version", () => {
     expect(missingConsents([
       { kind: "privacy", version: CONSENT_VERSION },

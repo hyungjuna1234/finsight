@@ -39,7 +39,7 @@ export function PrivacyPolicy() {
             {['이전받는 자', '국가', '항목', '목적', '시기와 방법', '보유 기간'].map((label) => <th key={label} scope="col" className="p-3 font-medium text-ink">{label}</th>)}
           </tr></thead>
           <tbody className="align-top">
-            <tr className="border-b border-line"><th scope="row" className="p-3 font-medium text-ink">Anthropic PBC</th><td className="p-3">미국</td><td className="p-3">가맹점명, 월별 집계값, 마스킹된 표 샘플(헤더+5행), 채팅 질문</td><td className="p-3">AI 분류·요약·답변</td><td className="p-3">기능을 쓸 때 API로 전송</td><td className="p-3">Anthropic API 데이터 보존 정책에 따름 [TODO: 정책 링크·기간 확인]</td></tr>
+            <tr className="border-b border-line"><th scope="row" className="p-3 font-medium text-ink">Anthropic PBC</th><td className="p-3">미국</td><td className="p-3">가맹점명, 월별 집계값, 마스킹된 표 샘플(헤더+5행), 채팅 질문, 채팅 답변에 필요한 거래 내역(최대 30건: 이용일·가맹점·금액·유형·카테고리)</td><td className="p-3">AI 분류·요약·답변</td><td className="p-3">기능을 쓸 때 API로 전송</td><td className="p-3">Anthropic API 데이터 보존 정책에 따름 [TODO: 정책 링크·기간 확인]</td></tr>
             <tr className="border-b border-line"><th scope="row" className="p-3 font-medium text-ink">Polar (법인명 [TODO: 확인])</th><td className="p-3">미국</td><td className="p-3">이메일, 결제 정보</td><td className="p-3">결제·구독 관리(판매 대행)</td><td className="p-3">결제할 때</td><td className="p-3">관련 법령에 따른 기간</td></tr>
             <tr className="border-b border-line"><th scope="row" className="p-3 font-medium text-ink">Vercel Inc.</th><td className="p-3">미국</td><td className="p-3">접속 기록과 요청 처리 데이터</td><td className="p-3">호스팅</td><td className="p-3">서비스를 쓸 때</td><td className="p-3">[TODO: 확인]</td></tr>
           </tbody>
