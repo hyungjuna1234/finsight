@@ -16,6 +16,7 @@ test-results/
 playwright-report/
 .DS_Store
 .claude/worktrees/
+__pycache__/
 
 # phase execution outputs
 phases/**/phase*-output.json
