@@ -5,6 +5,7 @@
   --bg: #f6f7f5;
   --surface: #ffffff;
   --line: #e1e5e2;
+  --line-strong: #879089;
   --ink: #18201c;
   --body: #3b4540;
   --muted: #66716b;
@@ -12,7 +13,10 @@
   --accent: #0e6b55;
   --accent-hover: #0b5745;
   --accent-soft: #e4f1ec;
-  --spend-up: #d03b2f;
+  --mark: #cde8dd;
+  --chart-muted: #c9d0cb;
+  --up-on-dark: #ff907f;
+  --spend-up: #c43a2e;
   --spend-down: #2563eb;
   --warning: #b45309;
 }
@@ -21,6 +25,7 @@
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-ink: var(--ink);
   --color-body: var(--body);
   --color-muted: var(--muted);
@@ -28,14 +33,35 @@
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-soft: var(--accent-soft);
+  --color-mark: var(--mark);
+  --color-chart-muted: var(--chart-muted);
+  --color-up-on-dark: var(--up-on-dark);
   --color-spend-up: var(--spend-up);
   --color-spend-down: var(--spend-down);
   --color-warning: var(--warning);
   --font-sans: var(--font-pretendard), "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
 }
 
+@theme {
+  --animate-landing-fade: landing-fade .3s ease-out both;
+  --animate-landing-pop: landing-pop .25s ease-out both;
+  --animate-landing-rise: landing-rise .45s ease-out both;
+  --animate-landing-grow-x: landing-grow-x .55s cubic-bezier(.2,.7,.2,1) both;
+  --animate-landing-grow-y: landing-grow-y .6s cubic-bezier(.2,.7,.2,1) both;
+  --animate-landing-select: landing-select .2s steps(1) none;
+
+  @keyframes landing-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes landing-pop { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
+  @keyframes landing-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes landing-grow-x { from { transform: scaleX(0); } to { transform: none; } }
+  @keyframes landing-grow-y { from { transform: scaleY(0); } to { transform: none; } }
+  @keyframes landing-select { from, to { box-shadow: inset 0 0 0 2px var(--accent); } }
+}
+
 body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-sans);
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }

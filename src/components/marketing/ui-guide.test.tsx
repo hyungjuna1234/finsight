@@ -11,9 +11,11 @@ import { TrustPoints } from "./trust-points";
 it("follows the marketing anti-slop rules", () => {
   const { container } = render(<><SiteHeader /><Hero /><TrustPoints /><HowItWorks /><PricingSummary /><FAQ /><SiteFooter /></>);
   const html = container.innerHTML;
-  for (const forbidden of ["backdrop-blur", "bg-gradient", "bg-clip-text", "blur-3xl", "rounded-2xl", "purple", "indigo", "violet", "animate-"]) {
+  for (const forbidden of ["backdrop-blur", "bg-gradient", "bg-clip-text", "blur-3xl", "rounded-2xl", "purple", "indigo", "violet"]) {
     expect(html).not.toContain(forbidden);
   }
+  const animationClasses = html.match(/[^\s"']*animate-[^\s"']*/g) ?? [];
+  for (const className of animationClasses) expect(className).toMatch(/^motion-safe:(?:animate-landing-|group-data-\[in=true\]:animate-landing-)/);
   expect(html).not.toContain("Powered by AI");
   expect(html).not.toContain("✨");
 });
