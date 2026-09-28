@@ -83,11 +83,12 @@ class StepExecutor:
     def run(self):
         self._print_header()
         self._check_blockers()
-        self._checkout_branch()
-        guardrails = self._load_guardrails()
-        self._ensure_created_at()
-        self._execute_all_steps(guardrails)
-        self._finalize()
+        with self._harness_lock():
+            self._checkout_branch()
+            guardrails = self._load_guardrails()
+            self._ensure_created_at()
+            self._execute_all_steps(guardrails)
+            self._finalize()
 
     # --- timestamps ---
 
@@ -109,6 +110,20 @@ class StepExecutor:
     def _run_git(self, *args) -> subprocess.CompletedProcess:
         cmd = ["git"] + list(args)
         return subprocess.run(cmd, cwd=self._root, capture_output=True, text=True)
+
+    @contextlib.contextmanager
+    def _harness_lock(self):
+        """실행하는 동안 git 디렉터리에 harness.lock(PID)을 둔다.
+        Claude Code의 Stop 훅(stop-verify.sh --defer-to-harness)이 이걸 보고 Codex가 작업 중인 트리를 검증하지 않는다."""
+        r = self._run_git("rev-parse", "--git-path", "harness.lock")
+        lock = Path(self._root) / r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else None
+        if lock:
+            lock.write_text(str(os.getpid()))
+        try:
+            yield
+        finally:
+            if lock:
+                lock.unlink(missing_ok=True)
 
     def _checkout_branch(self):
         branch = f"feat-{self._phase_name}"

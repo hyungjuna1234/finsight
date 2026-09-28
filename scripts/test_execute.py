@@ -603,3 +603,45 @@ class TestCheckBlockers:
         with pytest.raises(SystemExit) as exc_info:
             inst._check_blockers()
         assert exc_info.value.code == 2
+
+
+# ---------------------------------------------------------------------------
+# _harness_lock — 실행 중에는 Claude Code의 Stop 훅이 검증을 미루도록 PID를 남긴다
+# ---------------------------------------------------------------------------
+
+class TestHarnessLock:
+    @staticmethod
+    def _git_path(executor, tmp_project):
+        (tmp_project / ".git").mkdir(exist_ok=True)
+        executor._run_git = MagicMock(return_value=MagicMock(returncode=0, stdout=".git/harness.lock\n", stderr=""))
+        return tmp_project / ".git" / "harness.lock"
+
+    def test_writes_pid_while_held_and_removes_after(self, executor, tmp_project):
+        lock = self._git_path(executor, tmp_project)
+        with executor._harness_lock():
+            assert lock.read_text() == str(os.getpid())
+        assert not lock.exists()
+        executor._run_git.assert_called_with("rev-parse", "--git-path", "harness.lock")
+
+    def test_removes_lock_when_the_run_exits(self, executor, tmp_project):
+        lock = self._git_path(executor, tmp_project)
+        with pytest.raises(SystemExit):
+            with executor._harness_lock():
+                sys.exit(1)
+        assert not lock.exists()
+
+    def test_runs_without_lock_outside_git(self, executor):
+        executor._run_git = MagicMock(return_value=MagicMock(returncode=128, stdout="", stderr="not a git repo"))
+        with executor._harness_lock():
+            pass
+
+    def test_run_holds_lock_while_steps_execute(self, executor, tmp_project):
+        lock = self._git_path(executor, tmp_project)
+        seen = {}
+        for name in ("_print_header", "_check_blockers", "_checkout_branch", "_ensure_created_at", "_finalize"):
+            setattr(executor, name, MagicMock())
+        executor._load_guardrails = MagicMock(return_value="")
+        executor._execute_all_steps = lambda guardrails: seen.setdefault("locked", lock.exists())
+        executor.run()
+        assert seen["locked"] is True
+        assert not lock.exists()
