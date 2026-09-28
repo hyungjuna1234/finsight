@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "landing-hero",
-      "status": "pending"
+      "status": "completed",
+      "summary": "데모 데이터 기반 시트→카테고리 막대→AI 리포트 CSS 변환 스테이지와 새 랜딩 히어로를 구현",
+      "started_at": "2026-09-28T22:33:07+0900",
+      "completed_at": "2026-09-28T22:38:52+0900"
     },
     {
       "step": 3,
