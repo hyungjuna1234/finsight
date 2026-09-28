@@ -69,7 +69,10 @@
     {
       "step": 8,
       "name": "landing-page",
-      "status": "pending"
+      "status": "completed",
+      "summary": "8개 랜딩 섹션을 확정 순서로 조립하고 최초 노출 추적과 정적 OG 이미지를 추가했으며, e2e는 샌드박스 Turbopack 포트 제한으로 하네스 밖에서 확인 필요",
+      "started_at": "2026-09-28T23:00:39+0900",
+      "completed_at": "2026-09-28T23:05:39+0900"
     }
   ],
   "created_at": "2026-09-28T22:23:10+0900"
