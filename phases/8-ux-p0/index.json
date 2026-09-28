@@ -52,7 +52,10 @@
     {
       "step": 6,
       "name": "upload-guide",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-29T01:53:32+0900",
+      "completed_at": "2026-09-29T01:57:47+0900",
+      "summary": "업로드 첫 방문에 최근 3개월 카드사 안내·모바일 PC 이어보기·단계 표시를 추가하고 가이드 열기와 링크 복사 이벤트를 연결함"
     },
     {
       "step": 7,
