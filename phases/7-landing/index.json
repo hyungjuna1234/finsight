@@ -2,14 +2,54 @@
   "project": "FinSight",
   "phase": "7-landing",
   "steps": [
-    { "step": 0, "name": "landing-data", "status": "pending" },
-    { "step": 1, "name": "landing-kit", "status": "pending" },
-    { "step": 2, "name": "landing-hero", "status": "pending" },
-    { "step": 3, "name": "landing-tiles", "status": "pending" },
-    { "step": 4, "name": "landing-report", "status": "pending" },
-    { "step": 5, "name": "landing-flow", "status": "pending" },
-    { "step": 6, "name": "landing-closing", "status": "pending" },
-    { "step": 7, "name": "ai-disclosure", "status": "pending" },
-    { "step": 8, "name": "landing-page", "status": "pending" }
-  ]
+    {
+      "step": 0,
+      "name": "landing-data",
+      "status": "completed",
+      "summary": "getLandingShowcase로 월 합계·카테고리 막대·증가·주말·정기결제·리포트·채팅 랜딩 데이터를 데모 fixture에서 계산",
+      "started_at": "2026-09-28T22:23:10+0900",
+      "completed_at": "2026-09-28T22:27:12+0900"
+    },
+    {
+      "step": 1,
+      "name": "landing-kit",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "landing-hero",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "landing-tiles",
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "name": "landing-report",
+      "status": "pending"
+    },
+    {
+      "step": 5,
+      "name": "landing-flow",
+      "status": "pending"
+    },
+    {
+      "step": 6,
+      "name": "landing-closing",
+      "status": "pending"
+    },
+    {
+      "step": 7,
+      "name": "ai-disclosure",
+      "status": "pending"
+    },
+    {
+      "step": 8,
+      "name": "landing-page",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-09-28T22:23:10+0900"
 }
