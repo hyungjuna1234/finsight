@@ -32,10 +32,11 @@ export async function generateInsight(userId: string, month: YearMonth): Promise
   if (claimed && !(await adminEntitlements.markFreeInsightUsed(userId))) throw new AppError("PRO_REQUIRED");
 
   let content: InsightContent;
-  let usage: Awaited<ReturnType<typeof writeInsight>>["usage"];
   let createdAt: string | undefined;
   try {
-    ({ content, usage } = await writeInsight(metrics));
+    const result = await writeInsight(metrics);
+    content = result.content;
+    await recordAiUsage(userId, "insight", result.usage);
     const { data, error } = await sb.from("insights").upsert({ user_id: userId, month, content }, { onConflict: "user_id,month" }).select("created_at");
     if (error) throw new AppError("INTERNAL");
     createdAt = data?.[0]?.created_at;
@@ -50,6 +51,5 @@ export async function generateInsight(userId: string, month: YearMonth): Promise
     }
     throw error;
   }
-  await recordAiUsage(userId, "insight", usage);
   return { month, content, createdAt: createdAt ?? new Date().toISOString() };
 }

@@ -15,7 +15,7 @@ const ADMIN_CLIENT = {
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "coverage/**", "playwright-report/**", "test-results/**"]),
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "coverage/**", "playwright-report/**", "test-results/**", ".claude/worktrees/**"]),
   {
     files: ["src/**/*.{ts,tsx}"],
     ignores: ["src/services/supabase/**", "src/lib/**", "src/components/**", "src/server/admin.ts"],

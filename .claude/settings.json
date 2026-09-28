@@ -6,7 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/hooks/stop-verify.sh\""
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/hooks/stop-verify.sh\" --defer-to-harness",
+            "timeout": 600
           }
         ]
       }
