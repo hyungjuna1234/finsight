@@ -5,7 +5,10 @@
     {
       "step": 0,
       "name": "mask-hardening",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-09-28T20:43:51+0900",
+      "summary": "NFKC를 먼저 적용하고 실제 19xx/20xx 날짜와 경계만 보호해 계좌번호·전각 숫자 누출을 차단함",
+      "completed_at": "2026-09-28T20:47:01+0900"
     },
     {
       "step": 1,
@@ -32,5 +35,6 @@
       "name": "free-insight-claim",
       "status": "pending"
     }
-  ]
+  ],
+  "created_at": "2026-09-28T20:43:51+0900"
 }
