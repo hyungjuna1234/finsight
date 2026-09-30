@@ -253,6 +253,7 @@ APP-1을 마친 계정으로 `/upload`에서 하나씩 올린다. 문구는 `src
 |---|---|---|---|
 | 2026-09-28 | `main` ce46fd4, 더미 env 프로덕션 빌드(:3100), dev-browser headless | PUB-1~4 | 4개 모두 통과, 아래 발견 사항 있음 |
 | 2026-09-28 | — | APP-1~6 | 미실행. Supabase·OAuth·Anthropic·Polar sandbox 환경이 아직 없다(0-2) |
+| 2026-09-30 | `finsight-ops` `npm run dev`(:3000), Supabase dev, Polar sandbox + `polar listen`, 사람이 Chrome에서 조작하고 Claude가 Polar MCP·Supabase MCP로 대조 | APP-5 #1·#3·#8·#9 + 포털 해지 | 통과. checkout ₩6,900(KRW, 부가세 포함) → 구독 active → `entitlements` pro(약 6초). 포털 해지 → `cancel_at_period_end` → 웹훅으로 `synced_at` 갱신(약 2초), 기간 끝까지 pro 유지. #2·#4~7은 이번에 확인하지 않음 |
 
 ### 발견 사항 (2026-09-28)
 | 등급 | 내용 | 위치 | 비고 |
@@ -265,6 +266,13 @@ APP-1을 마친 계정으로 `/upload`에서 하나씩 올린다. 문구는 `src
 | 하 | 로그인 화면에 홈으로 돌아가는 길이 없다(헤더·링크 없음) | `auth/login-panel.tsx` | UX 백로그 B4와 같이 보면 좋다 |
 | 참고 | 데모에서 8월을 봐도 라벨이 "이번 달 지출"이다 | `dashboard/summary-tiles.tsx` | UX 백로그 B5("N월 지출") |
 | 참고 | env 없는 `npm run dev`에서 `/pricing` 500 | `(marketing)/pricing/page.tsx` → `getOptionalPlan()` | 테스트 환경 문제. 0-1 방식으로 돌린다 |
+
+### 발견 사항 (2026-09-30, APP-5)
+| 등급 | 내용 | 위치 | 비고 |
+|---|---|---|---|
+| 하 | 포털에서 해지해도 앱 화면은 그대로 "Pro"다. "해지 예정(10월 30일까지)" 같은 표시가 없다. Polar 상태는 `active` + `cancel_at_period_end`인데 `entitlements`에는 해지 예약 여부를 저장하지 않는다 | `lib/analytics/plan.ts` `derivePlan`, `billing/pricing-table.tsx`, `/settings` | 새 발견 |
+| 참고 | Polar 결제 화면이 영어다(`locale: en`, 조직 설정 `checkout_localization_enabled: false`) | Polar 조직 설정 | 코드 문제 아님 |
+| 참고 | `polar listen`으로 받은 웹훅은 Polar의 웹훅 전달 기록(`webhook deliveries`)에 남지 않는다. 웹훅 도착은 `polar listen` 창의 응답 코드나 `entitlements.synced_at`으로 확인한다 | — | 테스트 방법 |
 
 ## 5. 유지
 - UX 백로그가 반영되면 기대 문구를 같이 고친다. 특히 B5(요약 라벨), B8(문구 사전), B11(결제 뒤 복귀), B12(업로드 단계), B13(404·에러 화면), B14(Pro 메뉴 숨김)다.
