@@ -270,7 +270,7 @@ APP-1을 마친 계정으로 `/upload`에서 하나씩 올린다. 문구는 `src
 ### 발견 사항 (2026-09-30, APP-5)
 | 등급 | 내용 | 위치 | 비고 |
 |---|---|---|---|
-| 하 | 포털에서 해지해도 앱 화면은 그대로 "Pro"다. "해지 예정(10월 30일까지)" 같은 표시가 없다. Polar 상태는 `active` + `cancel_at_period_end`인데 `entitlements`에는 해지 예약 여부를 저장하지 않는다 | `lib/analytics/plan.ts` `derivePlan`, `billing/pricing-table.tsx`, `/settings` | 새 발견 |
+| 하 | 포털에서 해지해도 앱 화면은 그대로 "Pro"다. "해지 예정(10월 30일까지)" 같은 표시가 없다. Polar 상태는 `active` + `cancel_at_period_end`인데 `entitlements`에는 해지 예약 여부를 저장하지 않는다 | `lib/analytics/plan.ts` `derivePlan`, `billing/pricing-table.tsx`, `/settings` | 해결(1f4638a): `/settings`에 "해지를 예약했어요" 표시. 해지 → 웹훅 → `cancel_at_period_end=true` 확인. `/pricing`은 그대로 "이미 Pro를 쓰고 있어요" |
 | 참고 | Polar 결제 화면이 영어다(`locale: en`, 조직 설정 `checkout_localization_enabled: false`) | Polar 조직 설정 | 코드 문제 아님 |
 | 참고 | `polar listen`으로 받은 웹훅은 Polar의 웹훅 전달 기록(`webhook deliveries`)에 남지 않는다. 웹훅 도착은 `polar listen` 창의 응답 코드나 `entitlements.synced_at`으로 확인한다 | — | 테스트 방법 |
 
