@@ -213,7 +213,7 @@ export const adminEntitlements = {
 
   async upsertIfNewer(
     userId: string,
-    value: { plan: Plan; status: string; periodEnd: Date | null },
+    value: { plan: Plan; status: string; periodEnd: Date | null; cancelAtPeriodEnd: boolean },
     startedAt: Date,
   ): Promise<"updated" | "stale" | "unknown_user"> {
     const supabase = createAdminSupabase();
@@ -222,6 +222,7 @@ export const adminEntitlements = {
       plan: value.plan,
       status: value.status,
       period_end: value.periodEnd?.toISOString() ?? null,
+      cancel_at_period_end: value.cancelAtPeriodEnd,
       synced_at: iso,
     };
     const update = async () => supabase

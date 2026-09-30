@@ -23,8 +23,8 @@ export function derivePlan(
   state: CustomerState | null,
   now: Date,
   proProductId: string,
-): { plan: Plan; status: string; periodEnd: Date | null } {
-  if (state === null) return { plan: "free", status: "none", periodEnd: null };
+): { plan: Plan; status: string; periodEnd: Date | null; cancelAtPeriodEnd: boolean } {
+  if (state === null) return { plan: "free", status: "none", periodEnd: null, cancelAtPeriodEnd: false };
 
   const proSubscriptions = state.subscriptions.filter(({ productId }) => productId === proProductId);
   const latestFirst = [...proSubscriptions].sort((left, right) =>
@@ -39,9 +39,9 @@ export function derivePlan(
   const selected = eligible[0];
 
   if (selected) {
-    return { plan: "pro", status: selected.status, periodEnd: selected.currentPeriodEnd };
+    return { plan: "pro", status: selected.status, periodEnd: selected.currentPeriodEnd, cancelAtPeriodEnd: selected.cancelAtPeriodEnd };
   }
-  return { plan: "free", status: latestFirst[0]?.status ?? "none", periodEnd: null };
+  return { plan: "free", status: latestFirst[0]?.status ?? "none", periodEnd: null, cancelAtPeriodEnd: false };
 }
 
 export function isProActive(entitlement: EntitlementLike | null, now: Date): boolean {

@@ -24,15 +24,20 @@ describe("derivePlan", () => {
       subscription({ id: "early", status: "trialing" }),
       subscription({ id: "late", status: "past_due", currentPeriodEnd: new Date("2026-11-01T00:00:00Z") }),
     ] }, now, "pro");
-    expect(result).toEqual({ plan: "pro", status: "past_due", periodEnd: new Date("2026-11-01T00:00:00Z") });
+    expect(result).toEqual({ plan: "pro", status: "past_due", periodEnd: new Date("2026-11-01T00:00:00Z"), cancelAtPeriodEnd: false });
+  });
+
+  it("reports a cancellation scheduled for the period end", () => {
+    expect(derivePlan({ subscriptions: [subscription({ status: "active", cancelAtPeriodEnd: true })] }, now, "pro"))
+      .toEqual({ plan: "pro", status: "active", periodEnd: new Date("2026-10-01T00:00:00.000Z"), cancelAtPeriodEnd: true });
   });
 
   it("retains the latest pro-product status for free and handles null state", () => {
     expect(derivePlan({ subscriptions: [
       subscription({ status: "canceled", currentPeriodEnd: new Date("2026-08-01T00:00:00Z") }),
       subscription({ status: "revoked", currentPeriodEnd: new Date("2026-09-01T00:00:00Z") }),
-    ] }, now, "pro")).toEqual({ plan: "free", status: "revoked", periodEnd: null });
-    expect(derivePlan(null, now, "pro")).toEqual({ plan: "free", status: "none", periodEnd: null });
+    ] }, now, "pro")).toEqual({ plan: "free", status: "revoked", periodEnd: null, cancelAtPeriodEnd: false });
+    expect(derivePlan(null, now, "pro")).toEqual({ plan: "free", status: "none", periodEnd: null, cancelAtPeriodEnd: false });
   });
 
   it("leaves the seven-day past-due grace decision to isProActive", () => {

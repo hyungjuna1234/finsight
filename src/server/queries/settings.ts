@@ -47,13 +47,13 @@ export async function getSettings(): Promise<{ uploads: UploadListItem[]; cards:
 }
 
 export async function getSubscriptionSummary(now: Date = new Date()): Promise<{
-  plan: Plan; status: string; periodEnd: string | null; active: boolean;
+  plan: Plan; status: string; periodEnd: string | null; active: boolean; cancelAtPeriodEnd: boolean;
 }> {
   const user = await requireUser();
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase.from("entitlements").select("plan,status,period_end").eq("user_id", user.id).maybeSingle();
+  const { data, error } = await supabase.from("entitlements").select("plan,status,period_end,cancel_at_period_end").eq("user_id", user.id).maybeSingle();
   if (error) throw new AppError("INTERNAL");
   const plan = (data?.plan ?? "free") as Plan;
   const periodEnd = data?.period_end ?? null;
-  return { plan, status: data?.status ?? "none", periodEnd, active: isProActive({ plan, periodEnd: periodEnd ? new Date(periodEnd) : null }, now) };
+  return { plan, status: data?.status ?? "none", periodEnd, active: isProActive({ plan, periodEnd: periodEnd ? new Date(periodEnd) : null }, now), cancelAtPeriodEnd: data?.cancel_at_period_end ?? false };
 }

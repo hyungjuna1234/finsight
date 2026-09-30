@@ -199,7 +199,7 @@ polar: createCheckout · getCheckout · createPortalSession · getCustomerState 
 | 테이블 | 컬럼 (요약) | 사용자 권한 |
 |---|---|---|
 | `consents` | id, user_id→auth.users cascade, kind(`privacy`,`overseas_transfer`,`terms`,`age14`), version, agreed_at default now() | SELECT·INSERT 본인 |
-| `entitlements` | user_id PK, plan(`free`,`pro`), status, period_end, synced_at, free_insight_used_at | SELECT 본인만 (쓰기는 admin) |
+| `entitlements` | user_id PK, plan(`free`,`pro`), status, period_end, cancel_at_period_end(기간 끝 해지 예약), synced_at, free_insight_used_at | SELECT 본인만 (쓰기는 admin) |
 | `cards` | id, user_id, name, institution, created_at · UNIQUE(user_id, name) | 본인 전체 |
 | `uploads` | id, user_id, card_id null, storage_path, filename, sha256, byte_size, status(`uploaded`,`awaiting_confirm`,`done`,`failed`), error_code, mapping jsonb, header_signature, period_from, period_to, counts jsonb, original_deleted_at, created_at · 부분 UNIQUE(user_id, sha256) WHERE status <> 'failed' | 본인 전체 |
 | `transactions` | id, user_id, card_id, upload_id→uploads cascade, occurred_on date, merchant_raw, merchant_key, amount_krw bigint CHECK≥0, kind, status, installment_months, foreign_amount numeric, foreign_currency, approval_no, category CHECK(CATEGORIES), category_source, identity_key, created_at · UNIQUE(user_id, identity_key) · INDEX(user_id, occurred_on) | 본인 전체 |

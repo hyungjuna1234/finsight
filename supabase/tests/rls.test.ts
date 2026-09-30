@@ -58,7 +58,9 @@ describe("database RLS and grants", () => {
     await db.query("insert into entitlements (user_id, plan, status) values ($1, 'pro', 'active'), ($2, 'free', 'inactive')", [USER_A, USER_B]);
     await asUser(db, USER_A);
     expect((await db.query("select * from entitlements")).rows).toHaveLength(1);
+    expect((await db.query("select cancel_at_period_end from entitlements")).rows).toEqual([{ cancel_at_period_end: false }]);
     await expectDenied(db.query("insert into entitlements (user_id) values ($1)", [USER_A]));
+    await expectDenied(db.query("update entitlements set cancel_at_period_end = true where user_id = $1", [USER_A]));
     await expectDenied(db.query("update entitlements set plan = 'free' where user_id = $1", [USER_A]));
   });
 

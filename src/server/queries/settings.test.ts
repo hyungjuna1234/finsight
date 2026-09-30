@@ -23,8 +23,16 @@ it("업로드와 카드를 필요한 표시 형태로 매핑한다", async () =>
 });
 
 it("returns an active subscription summary after requiring the user", async () => {
-  const single = vi.fn().mockResolvedValue({ data: { plan: "pro", status: "past_due", period_end: "2026-10-26T00:00:00.000Z" }, error: null });
-  mocks.createSb.mockResolvedValue({ from: vi.fn(() => ({ select: vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle: single })) })) })) });
-  await expect(getSubscriptionSummary(new Date("2026-10-27T00:00:00.000Z"))).resolves.toEqual({ plan: "pro", status: "past_due", periodEnd: "2026-10-26T00:00:00.000Z", active: true });
+  const single = vi.fn().mockResolvedValue({ data: { plan: "pro", status: "past_due", period_end: "2026-10-26T00:00:00.000Z", cancel_at_period_end: true }, error: null });
+  const select = vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle: single })) }));
+  mocks.createSb.mockResolvedValue({ from: vi.fn(() => ({ select })) });
+  await expect(getSubscriptionSummary(new Date("2026-10-27T00:00:00.000Z"))).resolves.toEqual({ plan: "pro", status: "past_due", periodEnd: "2026-10-26T00:00:00.000Z", active: true, cancelAtPeriodEnd: true });
+  expect(select).toHaveBeenCalledWith("plan,status,period_end,cancel_at_period_end");
   expect(mocks.requireUser).toHaveBeenCalledBefore(mocks.createSb);
+});
+
+it("treats a missing entitlement row as Free without a scheduled cancellation", async () => {
+  const single = vi.fn().mockResolvedValue({ data: null, error: null });
+  mocks.createSb.mockResolvedValue({ from: vi.fn(() => ({ select: vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle: single })) })) })) });
+  await expect(getSubscriptionSummary()).resolves.toEqual({ plan: "free", status: "none", periodEnd: null, active: false, cancelAtPeriodEnd: false });
 });

@@ -137,7 +137,7 @@ describe("admin uploads", () => {
 
 describe("adminEntitlements.upsertIfNewer", () => {
   const startedAt = new Date("2026-09-27T01:02:03.004Z");
-  const value = { plan: "pro" as const, status: "active", periodEnd: new Date("2026-10-27T00:00:00Z") };
+  const value = { plan: "pro" as const, status: "active", periodEnd: new Date("2026-10-27T00:00:00Z"), cancelAtPeriodEnd: true };
 
   function updateResult(data: unknown[], error: unknown = null) {
     const select = vi.fn().mockResolvedValue({ data, error });
@@ -153,7 +153,7 @@ describe("adminEntitlements.upsertIfNewer", () => {
     const chain = updateResult([{ user_id: uid }]);
     mocks.from.mockReturnValue({ update: chain.update });
     await expect(adminEntitlements.upsertIfNewer(uid, value, startedAt)).resolves.toBe("updated");
-    expect(chain.update).toHaveBeenCalledWith({ plan: "pro", status: "active", period_end: "2026-10-27T00:00:00.000Z", synced_at: startedAt.toISOString() });
+    expect(chain.update).toHaveBeenCalledWith({ plan: "pro", status: "active", period_end: "2026-10-27T00:00:00.000Z", cancel_at_period_end: true, synced_at: startedAt.toISOString() });
     expect(chain.or).toHaveBeenCalledWith(`synced_at.is.null,synced_at.lt."${startedAt.toISOString()}"`);
   });
 

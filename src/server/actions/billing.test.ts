@@ -36,7 +36,7 @@ describe("billing actions", () => {
   it("persists a customer-state-derived entitlement", async () => {
     vi.useFakeTimers(); vi.setSystemTime(new Date("2026-09-27T00:00:00Z"));
     await expect(syncEntitlement(uid)).resolves.toEqual({ outcome: "updated", plan: "pro" });
-    expect(mocks.upsertIfNewer).toHaveBeenCalledWith(uid, { plan: "pro", status: "active", periodEnd: new Date("2026-10-01T00:00:00Z") }, new Date("2026-09-27T00:00:00Z"));
+    expect(mocks.upsertIfNewer).toHaveBeenCalledWith(uid, { plan: "pro", status: "active", periodEnd: new Date("2026-10-01T00:00:00Z"), cancelAtPeriodEnd: false }, new Date("2026-09-27T00:00:00Z"));
   });
 
   it("keeps the later-started sync when the earlier request finishes last", async () => {
