@@ -1,18 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AppError } from "@/lib/domain/errors";
 import type { ClaudeUsage } from "@/services/claude/models";
 
-const { classify, createServerSupabase, info, remainingDailyQuota, warn } = vi.hoisted(() => ({
+const { classify, createServerSupabase, info, recordAiUsage, remainingDailyQuota, warn } = vi.hoisted(() => ({
   classify: vi.fn(),
   createServerSupabase: vi.fn(),
   info: vi.fn(),
+  recordAiUsage: vi.fn(),
   remainingDailyQuota: vi.fn(),
   warn: vi.fn(),
 }));
 
 vi.mock("@/services/claude/classifier", () => ({ classify }));
 vi.mock("@/services/supabase/server", () => ({ createServerSupabase }));
-vi.mock("@/server/limits", () => ({ remainingDailyQuota }));
+vi.mock("@/server/limits", () => ({ recordAiUsage, remainingDailyQuota }));
 vi.mock("@/server/logger", () => ({ logger: { info, warn } }));
 
 import { categorizeTransactions } from "@/server/actions/categorize";
@@ -50,6 +52,8 @@ describe("categorizeTransactions", () => {
     classify.mockReset();
     createServerSupabase.mockReset();
     info.mockReset();
+    recordAiUsage.mockReset();
+    recordAiUsage.mockResolvedValue(undefined);
     remainingDailyQuota.mockReset();
     remainingDailyQuota.mockResolvedValue(100);
     warn.mockReset();
@@ -75,7 +79,7 @@ describe("categorizeTransactions", () => {
       ["미지상점", { category: "쇼핑", source: "ai" }],
     ]));
     expect(classify).toHaveBeenCalledWith(["미지상점"]);
-    expect(result.usage).toEqual([usage(1)]);
+    expect(recordAiUsage.mock.calls).toEqual([["user-1", "classify", usage(1)]]);
     for (const call of fake.calls) expect(call.eq).toContainEqual(["user_id", "user-1"]);
   });
 
@@ -101,8 +105,33 @@ describe("categorizeTransactions", () => {
     const rows = Array.from({ length: 250 }, (_, i) => ({ merchantKey: `미지 상점 ${i}` }));
     const result = await categorizeTransactions("user-1", rows);
     expect(classify.mock.calls.map(([keys]) => keys.length)).toEqual([100, 100, 50]);
-    expect(result.usage).toHaveLength(3);
+    expect(recordAiUsage.mock.calls).toEqual([
+      ["user-1", "classify", usage(100)], ["user-1", "classify", usage(100)], ["user-1", "classify", usage(50)],
+    ]);
+    expect(result.aiFailed).toBe(false);
     for (const call of fake.calls) for (const values of call.inValues) expect(values.length).toBeLessThanOrEqual(100);
+  });
+
+  it("각 AI 배치의 사용량을 그 배치 직후에 기록해서, 뒤 배치가 끝나지 않아도 앞 배치는 기록돼 있다", async () => {
+    createServerSupabase.mockResolvedValue(fakeClient([], []).client);
+    classify
+      .mockImplementationOnce(async (keys: string[]) => ({ categories: new Map(keys.map((key) => [key, "기타"])), usage: usage(100) }))
+      .mockReturnValueOnce(new Promise(() => {}));
+    const rows = Array.from({ length: 150 }, (_, i) => ({ merchantKey: `미지 상점 ${i}` }));
+
+    void categorizeTransactions("user-1", rows);
+
+    await vi.waitFor(() => expect(classify).toHaveBeenCalledTimes(2));
+    expect(recordAiUsage.mock.calls).toEqual([["user-1", "classify", usage(100)]]);
+  });
+
+  it("사용량 기록이 실패하면 AI 실패로 숨기지 않고 에러를 그대로 낸다", async () => {
+    createServerSupabase.mockResolvedValue(fakeClient([], []).client);
+    classify.mockResolvedValue({ categories: new Map([["미지 상점", "쇼핑"]]), usage: usage(1) });
+    recordAiUsage.mockRejectedValue(new AppError("INTERNAL"));
+
+    await expect(categorizeTransactions("user-1", [{ merchantKey: "미지 상점" }])).rejects.toMatchObject({ code: "INTERNAL" });
+    expect(warn).not.toHaveBeenCalledWith("categorize.ai_failed", expect.anything());
   });
 
   it("두 번째 AI 배치 실패 후 해당 배치와 이후 배치를 pending으로 두고 호출을 중단한다", async () => {
@@ -115,7 +144,7 @@ describe("categorizeTransactions", () => {
     const result = await categorizeTransactions("user-1", rows);
     expect(classify).toHaveBeenCalledTimes(2);
     expect(result.aiFailed).toBe(true);
-    expect(result.usage).toEqual([usage(100)]);
+    expect(recordAiUsage.mock.calls).toEqual([["user-1", "classify", usage(100)]]);
     expect(result.byKey.get("미지 상점 100")).toEqual({ category: "기타", source: "pending" });
     expect(result.byKey.get("미지 상점 249")).toEqual({ category: "기타", source: "pending" });
     expect(warn).toHaveBeenCalledWith("categorize.ai_failed", { keys: 150 });

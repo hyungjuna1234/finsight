@@ -130,7 +130,7 @@ describe("upload categorization limits", () => {
     createServerSupabase.mockResolvedValue(client);
     categorizeTransactions.mockResolvedValue({
       byKey: new Map([["미지 상점", { category: "기타", source: "pending" }]]),
-      usage: [], aiFailed: false, rateLimited: true,
+      aiFailed: false, rateLimited: true,
     });
 
     await expect(recategorizeUpload("user-1", upload.id)).rejects.toMatchObject({ code: "RATE_LIMITED", status: 429 });

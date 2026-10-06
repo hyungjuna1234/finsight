@@ -4,15 +4,13 @@ import { DEFAULT_CATEGORY, isCategory, type Category } from "@/lib/domain/catego
 import { AppError } from "@/lib/domain/errors";
 import type { CategorySource } from "@/lib/domain/types";
 import { categorizeByRule } from "@/lib/ingest/rules";
-import { remainingDailyQuota } from "@/server/limits";
+import { recordAiUsage, remainingDailyQuota } from "@/server/limits";
 import { logger } from "@/server/logger";
 import { classify } from "@/services/claude/classifier";
-import type { ClaudeUsage } from "@/services/claude/models";
 import { createServerSupabase } from "@/services/supabase/server";
 
 export interface CategorizeResult {
   byKey: Map<string, { category: Category; source: CategorySource }>;
-  usage: ClaudeUsage[];
   aiFailed: boolean;
   rateLimited: boolean;
 }
@@ -33,7 +31,6 @@ export async function categorizeTransactions(
 ): Promise<CategorizeResult> {
   const keys = [...new Set(rows.map(({ merchantKey }) => merchantKey))];
   const byKey = new Map<string, { category: Category; source: CategorySource }>();
-  const usage: ClaudeUsage[] = [];
   const supabase = await createServerSupabase();
 
   for (const chunk of batches(keys)) {
@@ -74,7 +71,7 @@ export async function categorizeTransactions(
 
   const aiKeys = keys.filter((key) => !byKey.has(key));
   const aiBatches = batches(aiKeys);
-  if (aiBatches.length === 0) return { byKey, usage, aiFailed: false, rateLimited: false };
+  if (aiBatches.length === 0) return { byKey, aiFailed: false, rateLimited: false };
 
   const remainingBatches = await remainingDailyQuota(userId, "classify");
   const allowedBatches = aiBatches.slice(0, remainingBatches);
@@ -84,19 +81,21 @@ export async function categorizeTransactions(
 
   for (let batchIndex = 0; batchIndex < allowedBatches.length; batchIndex += 1) {
     const chunk = allowedBatches[batchIndex]!;
+    let result: Awaited<ReturnType<typeof classify>>;
     try {
-      const result = await classify(chunk);
-      usage.push(result.usage);
-      for (const key of chunk) {
-        byKey.set(key, { category: result.categories.get(key) ?? DEFAULT_CATEGORY, source: "ai" });
-      }
+      result = await classify(chunk);
     } catch {
       const failedKeys = allowedBatches.slice(batchIndex).flat();
       for (const key of failedKeys) byKey.set(key, { category: DEFAULT_CATEGORY, source: "pending" });
       logger.warn("categorize.ai_failed", { keys: failedKeys.length });
-      return { byKey, usage, aiFailed: true, rateLimited: limitedKeys.length > 0 };
+      return { byKey, aiFailed: true, rateLimited: limitedKeys.length > 0 };
+    }
+    // 요청이 maxDuration에 끊겨도 이미 쓴 배치가 상한에 잡히도록 배치마다 바로 기록한다.
+    await recordAiUsage(userId, "classify", result.usage);
+    for (const key of chunk) {
+      byKey.set(key, { category: result.categories.get(key) ?? DEFAULT_CATEGORY, source: "ai" });
     }
   }
 
-  return { byKey, usage, aiFailed: false, rateLimited: limitedKeys.length > 0 };
+  return { byKey, aiFailed: false, rateLimited: limitedKeys.length > 0 };
 }

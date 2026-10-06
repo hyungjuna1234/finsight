@@ -147,7 +147,6 @@ async function categorizePending(userId: string, uploadId: string): Promise<{ up
   const { data: pendingRows, error } = await supabase.from("transactions").select("merchant_key").eq("user_id", userId).eq("upload_id", uploadId).eq("category_source", "pending"); db(error);
   if (!pendingRows?.length) return { updated: 0, pending: 0, aiFailed: false, rateLimited: false };
   const result = await categorizeTransactions(userId, pendingRows.map((row) => ({ merchantKey: row.merchant_key })));
-  for (const usage of result.usage) await recordAiUsage(userId, "classify", usage);
   let updated = 0;
   const groups = new Map<string, { category: string; source: TransactionInsert["category_source"]; keys: string[] }>();
   for (const [key, value] of result.byKey) {
