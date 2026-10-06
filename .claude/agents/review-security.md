@@ -10,7 +10,7 @@ model: inherit
 ## 시작
 1. `docs/REVIEW_GUIDE.md` — 심각도, 인라인 코멘트, 보고 형식
 2. `AGENTS.md`의 "아키텍처 규칙"
-3. `docs/ARCHITECTURE.md`의 "Pro 권한", "`server/admin.ts`가 export하는 함수", "API", "데이터베이스"
+3. `docs/ARCHITECTURE.md`의 "Pro 권한", "`server/admin.ts`가 export하는 함수", "API", "데이터베이스", "외부 SDK 메모"의 Supabase SSR
 
 ## 읽는 법
 - 메인이 범위, diff 명령, 파일 읽기 기준(작업 트리 또는 `git show <커밋>:<경로>`), 변경 파일 목록을 준다. 그 기준대로 읽는다.
@@ -19,7 +19,7 @@ model: inherit
 - Bash 명령에서 `supabase` 다음에 공백이 오면 bash-guard가 막는다. 경로는 `supabase/`처럼 슬래시를 붙인다.
 
 ## 체크리스트
-1. **쓰기 경로**: 변경 메서드 Route Handler는 `handler()`(`src/server/handler.ts`)를 거친다. `auth: "user"`, body는 zod. GET에는 부작용이 없다. 예외는 `webhooks/polar`(서명)와 `cron/cleanup`(`auth: "cron"`)뿐이다.
+1. **쓰기 경로**: 변경 메서드 Route Handler는 `handler()`(`src/server/handler.ts`)를 거친다. `auth: "user"`, body는 zod. GET에는 부작용이 없다. 예외는 `webhooks/polar`(서명), `cron/cleanup`(`auth: "cron"`), 그리고 세션 쿠키를 세우는 public GET `auth/login`·`auth/callback`(provider 허용 목록, `safeRedirect`)뿐이다.
 2. **읽기 경로**: `src/server/queries/*` 함수의 첫 줄은 `requireUser()`다. admin 함수(`src/server/admin.ts`)에는 세션에서 온 `userId`·경로만 넘긴다(요청 body 값 금지).
 3. **리다이렉트**: 사용자 입력이 들어간 리다이렉트는 `safeRedirect()`를 거친다.
 4. **RLS·DB** (`supabase/migrations/`): 새 테이블은 RLS를 켜고 `(select auth.uid()) = user_id` 정책, `anon` 권한 회수, `user_id` FK는 `auth.users` on delete cascade. `entitlements`에는 사용자 쓰기 정책이 없다. `ai_usage`에는 UPDATE·DELETE 정책이 없다. Storage 버킷에는 사용자 정책이 없다.
@@ -29,6 +29,7 @@ model: inherit
 8. **웹훅·cron·결제**: `webhooks/polar`는 `polar.validateWebhook`으로 서명을 검증한 뒤 처리하고(실패 403), 사용자는 `external_id`로만 찾는다. `cron/cleanup`은 `CRON_SECRET`을 비교한다. checkout·confirm은 본인 checkout인지 확인한다.
 9. **업로드**: 크기(10MB)·형식(시그니처) 검사를 서버가 한다. Storage 경로는 `{uid}/{uploadId}/original`이고 uid는 세션에서 온다. 파싱 상한(행·시트·쪽수·셀 길이)을 건너뛰는 경로가 없다.
 10. **AI 출력 렌더링**: AI 텍스트는 `src/components/ui/safe-markdown.tsx`로만 렌더링한다(`img`·`a` 금지, `skipHtml`). `dangerouslySetInnerHTML`이 없다. AI 출력은 zod·enum으로 검증한다.
+11. **브라우저 방어·세션**: `next.config.ts`의 보안 헤더를 넓히지 않는다. `script-src`에 이미 `'unsafe-inline'`이 있어서 CSP `connect-src`·`frame-ancestors`·`object-src`와 HSTS가 남은 방어선이다. 세션 쿠키(`src/proxy.ts`, `src/services/supabase/server.ts`)는 `httpOnly`·`secure`(프로덕션)·`sameSite`를 유지한다. proxy는 `getClaims()`로 세션만 갱신하고, 권한 판단은 `getUser()`(`requireUser`)로 한다.
 
 ## 맡지 않는 것
 - Claude로 보내는 데이터의 양·종류, `requireConsent()`, 로그 내용, 마스킹, 삭제·보관 → privacy

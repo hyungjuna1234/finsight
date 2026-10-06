@@ -23,14 +23,14 @@ model: inherit
    - 매핑 `proposeMapping`: 마스킹한 헤더 + 샘플 5행 이하
    - 분류 `classify`: 가맹점명(`merchant_key`)만, 100개 이하. 금액·날짜·카드 없음
    - 인사이트 `writeInsight`: 집계값(`InsightMetrics`)만, 개별 거래 없음
-   - 채팅 도구: `search_transactions`는 30행 이하, `userId`는 서버 클로저로 고정, 읽기 전용. 대화 기록은 DB에 저장하지 않는다
+   - 채팅 도구: `search_transactions`는 30행 이하, `userId`는 서버 클로저로 고정, 읽기 전용. 대화 기록은 DB에 저장하지 않고, `normalizeHistory`(`src/lib/domain/chat.ts`)를 거쳐 최근 10턴까지만 보낸다(이전 답변에 거래가 담길 수 있다)
    - 프롬프트나 도구 결과에 새 필드가 붙었으면 꼭 필요한지 따진다
-2. **동의**: Claude를 부르는 경로는 Claude 호출 전에 `handler({ consent: true })` 또는 `requireConsent()`를 거친다(국외 이전 동의).
+2. **동의**: Claude를 부르는 경로는 Claude 호출 전에 `handler({ consent: true })` 또는 `requireConsent()`를 거친다(국외 이전 동의). Claude로 보내는 항목이 늘거나 바뀌면 같은 변경에서 `src/lib/domain/consent.ts`의 `overseas_transfer` 요약, `src/components/marketing/legal/privacy-policy.tsx`의 `#overseas` 표, `CONSENT_VERSION`이 함께 바뀐다(사용자가 동의하지 않은 항목이 국외로 가면 안 된다).
 3. **로그**: `logger`(`src/server/logger.ts`)는 필드 타입만 막고 내용은 막지 않는다. 필드 값은 코드·ID·개수만 — 거래·가맹점·금액·파일 내용·파일명·채팅 메시지·프롬프트·DB 에러 문구가 들어가지 않는다. `console.*`를 직접 부르지 않는다.
 4. **에러 응답**: `{ error: { code, message } }`만 보낸다. DB·SDK 에러 문구, 파일 내용, 다른 사용자 리소스가 있는지 여부를 응답에 담지 않는다.
-5. **마스킹** (`src/lib/ingest/mask.ts`): Claude나 저장소로 가기 전에 마스킹을 건너뛰는 경로가 없다. 숫자 7개 이상 토큰은 `#`, 텍스트 셀은 `첫 글자***(N자)`, 저장하는 가맹점명에도 숫자 마스킹, 카드번호 열은 끝 4자리.
+5. **마스킹** (정의 `src/lib/ingest/mask.ts`, 적용 `src/lib/ingest/parse.ts`의 가맹점 `maskDigits`·`cardLast4`, `src/server/actions/uploads.ts`의 `maskSamples` 호출부 — 셋 중 하나라도 바뀌면 검사한다): Claude나 저장소로 가기 전에 마스킹을 건너뛰는 경로가 없다. 숫자 7개 이상 토큰은 `#`, 텍스트 셀은 `첫 글자***(N자)`, 저장하는 가맹점명에도 숫자 마스킹, 카드번호 열은 끝 4자리.
 6. **PDF 비밀번호**: analyze·confirm body로만 받고 메모리에서만 쓴다. DB·Storage·로그·에러 응답에 남지 않는다.
-7. **삭제·보관**: 데이터 삭제·탈퇴(`/api/account/*`)는 Storage 원본과 행을 같이 지운다. 새 테이블의 `user_id` FK는 cascade. cleanup cron은 90일 지난 원본과 24시간 넘은 `uploaded` 업로드를 지운다. 새로 저장하는 데이터가 이 삭제 경로에서 빠지지 않는다.
+7. **삭제·보관**: 데이터 삭제·탈퇴(`/api/account/*`)는 Storage 원본과 행을 같이 지운다. 새 테이블의 `user_id` FK는 cascade. 업로드 단위 삭제도 삭제 경로다: `DELETE /api/uploads/:id`(`deleteUpload`)와 cron의 24시간 넘은 `uploaded` 업로드 삭제(`deleteStale`)는 `uploads` 행만 지우므로, 업로드에서 나온 새 데이터는 `transactions`처럼 `upload_id` FK에 on delete cascade를 건다. cleanup cron은 90일 지난 원본도 지운다. 새로 저장하는 데이터가 이 삭제 경로에서 빠지지 않는다.
 8. **브라우저로 가는 데이터**: Server Component가 client component에 넘기는 props에 필요 이상의 데이터(원본 행, 다른 사용자 값)가 없다. 거래 데이터를 `localStorage`·URL 쿼리에 두지 않는다.
 
 ## 맡지 않는 것

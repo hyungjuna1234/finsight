@@ -14,13 +14,13 @@ model: inherit
 
 ## 읽는 법
 - 메인이 범위, diff 명령, 파일 읽기 기준(작업 트리 또는 `git show <커밋>:<경로>`), 변경 파일 목록을 준다. 그 기준대로 읽는다.
-- 구현 파일마다 짝 테스트를 찾는다: 같은 폴더의 `X.test.ts`(node) / `X.test.tsx`(jsdom). RLS는 `supabase/tests/`.
+- 구현 파일마다 짝 테스트를 찾는다: 같은 폴더의 `X.test.ts`(node) / `X.test.tsx`(jsdom). RLS는 `supabase/tests/`. `scripts/*.sh`·`scripts/execute.py`는 `scripts/test_scripts.py`·`scripts/test_execute.py`(pytest).
 - diff에서 바뀐 동작(분기·에러 경로·상태 전이·호출 순서·계약)을 나열하고, 각각을 검사하는 테스트를 찾는다. 범위 안에서 테스트가 안 바뀌었어도 기존 테스트가 새 동작을 덮는지 확인한다.
 - 읽기 전용이다. 파일을 고치거나 npm·테스트를 돌리지 않는다(메인이 `verify.sh`로 돌린다).
 - Bash 명령에서 `supabase` 다음에 공백이 오면 bash-guard가 막는다. 경로는 `supabase/`처럼 슬래시를 붙인다.
 
 ## 체크리스트
-1. **존재**: 바뀐 동작마다 같은 폴더에 테스트가 있다. `__tests__/`는 금지. 설정·타입·문서와 조합만 하는 `page.tsx`·`layout.tsx`는 예외다(`scripts/hooks/tdd-guard.sh`의 예외와 같다).
+1. **존재**: 바뀐 동작마다 같은 폴더에 테스트가 있다. `__tests__/`는 금지. 예외는 `scripts/hooks/tdd-guard.sh`의 `check_file` 예외 목록(설정·타입·문서, `.claude/`, Next 규약 파일 `page.tsx`·`layout.tsx`·`error.tsx`·`proxy.ts`·`instrumentation.ts` 등)을 따른다. 단, 분기가 있는 규약 파일(예: `src/proxy.ts`)은 그 분기를 맡는 `src/lib`·`src/server` 함수에 테스트가 있는지 확인한다.
 2. **규칙 vs 호출 순서**: 테스트가 규칙("저장이 실패해도 `ai_usage`가 기록된다")을 검사하는가, mock 호출 순서·횟수만 굳히는가. 순서를 기대값으로 박았으면 그 순서가 규칙에 맞는지 따진다. 이 레포에서 "Claude 호출 → 저장 → 사용량 기록" 순서를 고정한 테스트 때문에, 저장이 실패하면 기록이 빠지는 버그가 테스트를 통과한 적이 있다.
 3. **실패 경로**: 바뀐 코드에 있는 실패 분기를 테스트가 밟는다 — Claude 실패(`AI_UNAVAILABLE`), 저장 실패, 상한 초과(`RATE_LIMITED`), 권한 없음(`PRO_REQUIRED`·`CONSENT_REQUIRED`·`UNAUTHENTICATED`), 잘못된 입력(`VALIDATION_FAILED`), 다른 사용자 리소스(`NOT_FOUND`).
 4. **경계값**: 상한 0·1·N, 빈 입력, 월 경계(KST), 금액 0, 최대 행·쪽수.
