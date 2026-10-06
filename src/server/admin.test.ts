@@ -85,6 +85,19 @@ describe("admin storage", () => {
       { id: validId, storagePath: `${uid}/${validId}/original` },
     ]);
   });
+
+  it("keeps cleanup rows whose uuids have any version so they cannot block the queue", async () => {
+    const nil = "00000000-0000-0000-0000-000000000000";
+    const versionZero = "33333333-3333-0333-0333-333333333333";
+    const limit = vi.fn().mockResolvedValue({ data: [{ id: nil, user_id: uid }, { id: versionZero, user_id: nil }], error: null });
+    const select = vi.fn(() => ({ is: vi.fn(() => ({ lt: vi.fn(() => ({ order: vi.fn(() => ({ limit })) })) })) }));
+    mocks.from.mockReturnValue({ select });
+
+    await expect(adminStorage.listExpiredOriginals(new Date(), 200)).resolves.toEqual([
+      { id: nil, storagePath: `${uid}/${nil}/original` },
+      { id: versionZero, storagePath: `${nil}/${versionZero}/original` },
+    ]);
+  });
 });
 
 describe("admin uploads", () => {

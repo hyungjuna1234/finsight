@@ -5,8 +5,9 @@ import type { Plan } from "@/lib/domain/types";
 import { logger } from "@/server/logger";
 import { createAdminSupabase } from "@/services/supabase/admin";
 
-const UUID_PATH = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\//i;
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+// 버전·변형 자리는 보지 않는다. uuid 컬럼은 nil 같은 값도 받으므로, 버전을 따지면 사용자가 직접 넣은 행이 정리 큐 앞자리를 막는다.
+const UUID_PATH = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\//i;
+const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 
 function safePath(path: string): void {
   if (!UUID_PATH.test(path) || path.startsWith("/") || path.split("/").includes("..")) throw new Error("Unsafe storage path");
