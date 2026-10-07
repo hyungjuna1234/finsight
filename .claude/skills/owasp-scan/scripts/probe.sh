@@ -105,19 +105,23 @@ for f in $ROUTE_FILES; do
   rel=${f#src/app}; rel=${rel%/route.ts}
   case "$rel" in /api/webhooks/*|/api/cron/*) continue ;; esac
   path=$(echo "$rel" | sed -E "s/\\[[^]]+\\]/$UUID/g")
-  for m in $(grep -oE 'export (const|async function) (GET|POST|PUT|PATCH|DELETE)\b' "$f" | awk '{print $3}'); do
+  for m in $(grep -oE 'export (const|async function|function) (GET|POST|PUT|PATCH|DELETE)\b' "$f" | awk '{print $NF}'); do
     n=$((n + 1))
     BODY="$LOGDIR/body"
     s=$(curl -s -o "$BODY" -w '%{http_code}' -X "$m" -H "Origin: $B" -H 'content-type: application/json' -d '{}' "$B$path")
+    unauth=$s
     if [ "$s" = 401 ]; then result PASS "U$n" A01 critical "$m $path 인증 없음 → 401" "$s"
     elif [ "${s:0:1}" = 2 ] || [ "${s:0:1}" = 3 ]; then result FAIL "U$n" A01 critical "$m $path 인증 없이 통과" "$s"
-    else result FAIL "U$n" A01 major "$m $path 인증 없음인데 401이 아님(인증보다 다른 처리가 먼저)" "$s"; fi
+    else result FAIL "U$n" A01 major "$m $path 인증 없음인데 401이 아님(인증 검사가 없거나 다른 처리가 먼저, 코드로 확인)" "$s"; fi
     check_leak "U$n" "$m $path" "$BODY"
 
-    s=$(curl -s -o "$BODY" -w '%{http_code}' -X "$m" -H "Origin: $B" -H "Cookie: $FAKE_COOKIE" -H 'content-type: application/json' -d '{}' "$B$path")
-    if [ "$s" = 401 ]; then result PASS "F$n" A07 critical "$m $path 위조 세션 쿠키 → 401" "$s"
-    else result FAIL "F$n" A07 critical "$m $path 위조 세션 쿠키를 거부하지 않음(getUser 검증 확인)" "$s"; fi
-    check_leak "F$n" "$m $path" "$BODY"
+    # 인증 검사가 있는 라우트만: 위조 쿠키도 401이어야 한다(getSession처럼 검증 없이 믿으면 통과한다)
+    if [ "$unauth" = 401 ]; then
+      s=$(curl -s -o "$BODY" -w '%{http_code}' -X "$m" -H "Origin: $B" -H "Cookie: $FAKE_COOKIE" -H 'content-type: application/json' -d '{}' "$B$path")
+      if [ "$s" = 401 ]; then result PASS "F$n" A07 critical "$m $path 위조 세션 쿠키 → 401" "$s"
+      else result FAIL "F$n" A07 critical "$m $path 위조 세션 쿠키를 거부하지 않음(getUser 검증 확인)" "$s"; fi
+      check_leak "F$n" "$m $path" "$BODY"
+    fi
 
     case "$m" in
       POST|PUT|PATCH|DELETE)
@@ -128,7 +132,7 @@ for f in $ROUTE_FILES; do
     esac
   done
 done
-FIRST_POST=$(for f in $ROUTE_FILES; do grep -qE 'export (const|async function) POST\b' "$f" && echo "$f"; done | grep -vE 'webhooks|cron' | head -1)
+FIRST_POST=$(for f in $ROUTE_FILES; do grep -qE 'export (const|async function|function) POST\b' "$f" && echo "$f"; done | grep -vE 'webhooks|cron' | head -1)
 if [ -n "$FIRST_POST" ]; then
   p=${FIRST_POST#src/app}; p=$(echo "${p%/route.ts}" | sed -E "s/\\[[^]]+\\]/$UUID/g")
   s=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Sec-Fetch-Site: cross-site' -H 'content-type: application/json' -d '{}' "$B$p")
