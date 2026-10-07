@@ -131,7 +131,8 @@ def run_claude(cmd: list[str], env: dict, timeout: int) -> dict:
     if shutil.which(cmd[0], path=env.get("PATH")) is None:
         raise ReviewError("claude CLI를 찾을 수 없습니다. 설치: https://code.claude.com/docs")
     try:
-        proc = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=timeout)
+        # claude -p는 stdin을 읽는다. git 훅의 stdin(push할 ref 목록)을 넘기지 않는다.
+        proc = subprocess.run(cmd, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
         raise ReviewError(f"리뷰 시간 초과({timeout}초)")
     try:

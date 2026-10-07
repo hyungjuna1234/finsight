@@ -20,6 +20,7 @@ FAKE_CLAUDE = """#!/bin/bash
 # 받은 인자와 환경을 기록하고, FAKE_CLAUDE_OUT을 stdout으로 내고 FAKE_CLAUDE_EXIT로 끝낸다.
 printf '%s\\n' "$@" > "$FAKE_CLAUDE_ARGS"
 env > "$FAKE_CLAUDE_ENV"
+[ -n "${FAKE_CLAUDE_STDIN:-}" ] && cat > "$FAKE_CLAUDE_STDIN"
 [ -n "${FAKE_CLAUDE_SLEEP:-}" ] && sleep "$FAKE_CLAUDE_SLEEP"
 cat "$FAKE_CLAUDE_OUT"
 exit "${FAKE_CLAUDE_EXIT:-0}"
@@ -213,6 +214,13 @@ class TestScript:
         assert data["range"] == "a..b"
         assert data["summary_markdown"].startswith("## 판정: Changes Requested")
         assert len(data["comments"]) == 2
+
+    def test_does_not_hand_its_stdin_to_claude(self, fake):
+        env, respond, tmp = fake
+        respond(result(review()))
+        env["FAKE_CLAUDE_STDIN"] = str(tmp / "stdin")
+        subprocess.run([sys.executable, str(SCRIPT), "a..b"], env=env, input="refs/heads/b 1 refs/heads/b 2\n", capture_output=True, text=True, timeout=30)
+        assert (tmp / "stdin").read_text() == ""
 
     def test_runs_claude_outside_the_calling_session(self, fake):
         env, respond, tmp = fake
