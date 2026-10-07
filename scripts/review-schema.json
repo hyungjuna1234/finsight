@@ -1,0 +1,50 @@
+{
+  "type": "object",
+  "properties": {
+    "dimensions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "리뷰한 차원(SKILL.md 차원 표)"
+    },
+    "verify": {
+      "type": "string",
+      "enum": ["PASS", "FAIL", "SKIPPED"],
+      "description": "scripts/verify.sh 결과(또는 시스템 프롬프트의 REVIEW_VERIFY). 과거 범위라 돌리지 않았으면 SKIPPED"
+    },
+    "failed_dimensions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "두 번 실패해서 '리뷰 못 함'이 된 차원. 없으면 빈 배열"
+    },
+    "walkthrough": {
+      "type": "string",
+      "description": "이 범위가 무엇을 바꿨는지 2~3줄(커밋 메시지·diff stat 기준)"
+    },
+    "good_points": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "에이전트 보고의 잘된 점 2~3개. 각 항목은 `file:line` 한 줄, 글머리표 없이"
+    },
+    "next_actions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "critical·major를 고칠 순서와 확인할 테스트, 마지막에 다시 리뷰. 번호 없이 순서대로"
+    },
+    "comments": {
+      "type": "array",
+      "description": "SKILL.md 4의 합친 인라인 코멘트. 판정·개수는 실행기가 이 목록으로 계산한다",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "레포 루트 기준 경로" },
+          "line": { "type": "integer", "description": "범위 끝 커밋 기준 줄 번호" },
+          "severity": { "type": "string", "enum": ["critical", "major", "minor", "nit"] },
+          "dimensions": { "type": "array", "items": { "type": "string" } },
+          "body": { "type": "string", "description": "인라인 4줄: [심각도] 제목 / TL;DR / ✓ Good / → Fix" }
+        },
+        "required": ["path", "line", "severity", "dimensions", "body"]
+      }
+    }
+  },
+  "required": ["dimensions", "verify", "failed_dimensions", "walkthrough", "good_points", "next_actions", "comments"]
+}
