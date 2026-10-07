@@ -62,7 +62,7 @@ def env(tmp_path):
     npm.chmod(0o755)
     log = tmp_path / "npm.log"
     log.write_text("")
-    e = {k: v for k, v in os.environ.items() if k not in ("CLAUDE_PROJECT_DIR", "NPM_FAIL", "GIT_DIR", "GIT_INDEX_FILE")}
+    e = {k: v for k, v in os.environ.items() if k not in ("CLAUDE_PROJECT_DIR", "NPM_FAIL", "GIT_DIR", "GIT_INDEX_FILE", "REVIEW_CODE_HEADLESS")}
     e["PATH"] = f"{bin_dir}:{e['PATH']}"
     e["NPM_LOG"] = str(log)
     return e
@@ -298,6 +298,13 @@ class TestStopVerify:
         (repo / ".next" / "x").write_text("x\n")
         run(STOP_VERIFY, cwd=repo, env=env, stdin=stop_input(repo))
         assert len(npm_calls(env)) == 3
+
+    def test_skips_inside_a_headless_review(self, tmp_path, env):
+        repo = make_repo(tmp_path / "r")
+        (repo / "wip.txt").write_text("uncommitted\n")
+        r = run(STOP_VERIFY, cwd=repo, env={**env, "REVIEW_CODE_HEADLESS": "1"}, stdin=stop_input(repo))
+        assert r.returncode == 0
+        assert npm_calls(env) == []
 
     def test_defers_to_a_running_harness(self, tmp_path, env):
         repo = make_repo(tmp_path / "r")
