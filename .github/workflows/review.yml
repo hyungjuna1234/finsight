@@ -1,0 +1,72 @@
+name: review
+
+# PR마다 verify(lint → test → build)와 /review-code를 돌리고 결과를 PR 리뷰로 게시한다.
+# 판정이 Blocked(🔴 critical 또는 verify 실패)거나 리뷰를 못 돌리면 review job이 실패한다. 기준: docs/REVIEW_GUIDE.md
+# 필요한 secret: CLAUDE_CODE_OAUTH_TOKEN (로컬에서 `claude setup-token`으로 만든다)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: bash scripts/verify.sh
+
+  review:
+    needs: verify
+    # verify가 실패해도 돌아서 Blocked로 게시한다. 초안 PR과 포크 PR(secret을 받지 못함)은 건너뛴다.
+    if: ${{ !cancelled() && !github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      BASE: ${{ github.event.pull_request.base.sha }}
+      HEAD: ${{ github.event.pull_request.head.sha }}
+      PR: ${{ github.event.pull_request.number }}
+      VERIFY: ${{ needs.verify.result == 'success' && 'PASS' || 'FAIL' }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      # 로컬에서 헤드리스 실행을 확인한 버전. -p 기본값이 --bare로 바뀌면 프로젝트 스킬·에이전트를 못 읽으니 올릴 때 다시 확인한다.
+      - run: npm install -g @anthropic-ai/claude-code@2.1.292
+      - id: review
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          set +e
+          python3 scripts/review_code.py "$BASE...$HEAD" --verify "$VERIFY" --json-out review.json
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+      - if: ${{ hashFiles('review.json') != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/post_review.py review.json --repo "$GITHUB_REPOSITORY" --pr "$PR" --base "$BASE" --commit "$HEAD"
+      - name: gate
+        if: ${{ !cancelled() }}
+        env:
+          CODE: ${{ steps.review.outputs.code }}
+        run: |
+          case "$CODE" in
+            0) echo "판정: Approve 또는 Changes Requested" ;;
+            1) echo "::error::판정 Blocked (🔴 critical 또는 verify 실패)"; exit 1 ;;
+            *) echo "::error::리뷰를 실행하지 못했습니다 (review_code.py exit ${CODE:-없음})"; exit 1 ;;
+          esac
