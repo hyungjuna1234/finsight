@@ -5,10 +5,9 @@ import { ApiError, apiFetch, redirectPathForError } from "@/components/ui/api-fe
 import { AiDisclaimer } from "@/components/ui/ai-disclaimer";
 import { CHAT_LIMITS, normalizeHistory, type ChatTurn } from "@/lib/domain/chat";
 import { ChatInput } from "./chat-input";
+import { chatStorageKey, pruneChatStorage } from "./chat-storage";
 import { ExampleQuestions } from "./example-questions";
 import { MessageList } from "./message-list";
-
-const STORAGE_KEY = "finsight.chat.v1";
 
 function storedMessages(value: string | null): ChatTurn[] | null {
   if (value === null) return [];
@@ -19,7 +18,8 @@ function storedMessages(value: string | null): ChatTurn[] | null {
   } catch { return null; }
 }
 
-export function ChatPanel({ examples }: { examples: readonly string[] }) {
+export function ChatPanel({ ownerId, examples }: { ownerId: string; examples: readonly string[] }) {
+  const storageKey = chatStorageKey(ownerId);
   const [messages, setMessages] = useState<ChatTurn[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,18 +28,19 @@ export function ChatPanel({ examples }: { examples: readonly string[] }) {
   const [retry, setRetry] = useState<{ question: string; history: ChatTurn[] } | null>(null);
 
   useEffect(() => {
-    const restored = storedMessages(sessionStorage.getItem(STORAGE_KEY));
-    if (restored === null) sessionStorage.removeItem(STORAGE_KEY);
+    pruneChatStorage(ownerId);
+    const restored = storedMessages(sessionStorage.getItem(storageKey));
+    if (restored === null) sessionStorage.removeItem(storageKey);
     // sessionStorage is unavailable during server rendering, so restoration belongs to this client sync effect.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     else setMessages(restored);
     setReady(true);
-  }, []);
+  }, [ownerId, storageKey]);
   useEffect(() => {
     if (!ready) return;
-    if (messages.length === 0) sessionStorage.removeItem(STORAGE_KEY);
-    else sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-  }, [messages, ready]);
+    if (messages.length === 0) sessionStorage.removeItem(storageKey);
+    else sessionStorage.setItem(storageKey, JSON.stringify(messages));
+  }, [messages, ready, storageKey]);
 
   const request = async (question: string, history: ChatTurn[], appendUser: boolean) => {
     const cleanQuestion = question.trim();
@@ -60,7 +61,7 @@ export function ChatPanel({ examples }: { examples: readonly string[] }) {
     } finally { setLoading(false); }
   };
   const submit = (question = input) => void request(question, messages, true);
-  const clear = () => { setMessages([]); setError(null); setRetry(null); sessionStorage.removeItem(STORAGE_KEY); };
+  const clear = () => { setMessages([]); setError(null); setRetry(null); sessionStorage.removeItem(storageKey); };
 
   return (
     <section className="space-y-6">

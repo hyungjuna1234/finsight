@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
+import { clearChatStorage } from "@/components/chat/chat-storage";
 import { apiFetch } from "@/components/ui/api-fetch";
 import { trackEvent } from "@/components/ui/track";
 import type { ConsentKind } from "@/lib/domain/consent";
@@ -77,7 +78,7 @@ export function ConsentForm({ items }: { items: readonly ConsentItem[] }) {
           {error ? <p role="alert" className="text-sm text-warning">{error}</p> : null}
         </div>
       </form>
-      <form action="/auth/signout" method="post" className="border-t border-line pt-4">
+      <form action="/auth/signout" method="post" onSubmit={clearChatStorage} className="border-t border-line pt-4">
         <button type="submit" className="text-sm text-muted underline-offset-4 hover:text-ink hover:underline">동의하지 않고 나가기</button>
       </form>
     </div>
