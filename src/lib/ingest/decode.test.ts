@@ -126,4 +126,29 @@ describe("text decoding and delimited parsing", () => {
     const bytes = Uint8Array.from(Array.from({ length: 40 }, (_, index) => index % 2 ? 0x80 : 0xff));
     expect(decodeText(bytes, null)).toEqual({ ok: false, error: "ENCODING_ERROR" });
   });
+
+  it("parseDelimited는 상한 다음 행에서 멈춘다", () => {
+    expect(parseDelimited("a\nb\nc\nd\n", ",", 2)).toEqual([["a"], ["b"], ["c"]]);
+  });
+
+  it("줄 수가 행 상한의 두 배를 넘는 CSV는 열을 채우기 전에 TOO_MANY_ROWS", () => {
+    const header = Array.from({ length: 100 }, (_, i) => `열${i}`).join(",");
+    const text = `${header}\n${"\n".repeat(20_001)}`;
+    expect(decodeFile(new TextEncoder().encode(text), { kind: "text", extension: "csv", encoding: "utf-8" } as Sniff)).toEqual({ ok: false, error: "TOO_MANY_ROWS" });
+  });
+
+  it("xlsx는 SheetJS로 풀기 전에 zip 상한을 확인한다", () => {
+    // 항목 수만 많은 가짜 zip. SheetJS까지 가면 CORRUPT_FILE이 나온다.
+    const entries = 2_001;
+    const parts: Buffer[] = []; const centrals: Buffer[] = []; let offset = 0;
+    for (let n = 0; n < entries; n += 1) {
+      const name = Buffer.from(`f${n}`); const local = Buffer.alloc(30); local.writeUInt32LE(0x04034b50, 0); local.writeUInt16LE(name.length, 26);
+      const central = Buffer.alloc(46); central.writeUInt32LE(0x02014b50, 0); central.writeUInt16LE(name.length, 28); central.writeUInt32LE(offset, 42);
+      parts.push(local, name); centrals.push(central, name); offset += 30 + name.length;
+    }
+    const directory = Buffer.concat(centrals); const end = Buffer.alloc(22);
+    end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(entries, 8); end.writeUInt16LE(entries, 10); end.writeUInt32LE(directory.length, 12); end.writeUInt32LE(offset, 16);
+    const bytes = new Uint8Array(Buffer.concat([...parts, directory, end]));
+    expect(decodeFile(bytes, { kind: "xlsx", extension: "xlsx", encoding: null } as Sniff)).toEqual({ ok: false, error: "FILE_TOO_COMPLEX" });
+  });
 });

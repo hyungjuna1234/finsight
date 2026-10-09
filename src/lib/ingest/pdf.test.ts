@@ -58,4 +58,9 @@ describe("readPdf", () => {
     const pages = Array.from({ length: PDF_LIMITS.maxPages + 1 }, () => [{ text: "x", x: 10, y: 10 }]);
     expect(await readPdf(syntheticPdf(pages), null)).toEqual({ ok: false, error: "FILE_TOO_COMPLEX" });
   });
+
+  it("쪽당 글자 조각이 상한을 넘으면 표로 묶기 전에 FILE_TOO_COMPLEX", async () => {
+    const page = Array.from({ length: PDF_LIMITS.maxItemsPerPage + 1 }, (_, i) => ({ text: "x", x: 10, y: 10 + (i % 700) }));
+    expect(await readPdf(syntheticPdf([page]), null)).toEqual({ ok: false, error: "FILE_TOO_COMPLEX" });
+  });
 });
