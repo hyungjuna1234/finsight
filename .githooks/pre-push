@@ -1,0 +1,55 @@
+#!/bin/bash
+# pre-push: push할 커밋을 /review-code로 리뷰하고, 판정이 Blocked(🔴 또는 verify 실패)면 push를 막는다.
+# 실행기는 scripts/review_code.py(claude -p)이고 몇 분 걸린다. 판정 기준은 docs/REVIEW_GUIDE.md.
+# 건너뜀: SKIP_REVIEW=1 · 하네스 실행 중(harness.lock의 PID가 살아 있음) · 브랜치 삭제 · 새 커밋 없음
+# 리뷰 자체를 못 돌리면(claude 없음·인증 실패 등) 경고만 하고 push를 계속한다.
+# 이 레포에서 한 번: git config core.hooksPath .githooks
+
+REMOTE="${1:-origin}"
+ZERO=0000000000000000000000000000000000000000
+
+ROOT=$(git rev-parse --show-toplevel) || exit 0
+cd "$ROOT" || exit 0
+
+if [ "${SKIP_REVIEW:-}" = "1" ]; then
+  echo "[pre-push] SKIP_REVIEW=1: 리뷰를 건너뜁니다" >&2
+  exit 0
+fi
+
+LOCK=$(git rev-parse --git-path harness.lock)
+if [ -f "$LOCK" ] && kill -0 "$(cat "$LOCK")" 2>/dev/null; then
+  echo "[pre-push] 하네스 실행 중: 리뷰를 건너뜁니다" >&2
+  exit 0
+fi
+
+STATUS=0
+while read -r LOCAL_REF LOCAL_SHA _ REMOTE_SHA; do
+  [ -z "$LOCAL_SHA" ] || [ "$LOCAL_SHA" = "$ZERO" ] && continue
+
+  if [ "$REMOTE_SHA" != "$ZERO" ] && git cat-file -e "$REMOTE_SHA^{commit}" 2>/dev/null; then
+    RANGE="$(git rev-parse --short "$REMOTE_SHA")..$(git rev-parse --short "$LOCAL_SHA")"
+    NEW="$REMOTE_SHA..$LOCAL_SHA"
+  elif git rev-parse --verify -q "refs/remotes/$REMOTE/main" >/dev/null; then
+    RANGE="$REMOTE/main...$(git rev-parse --short "$LOCAL_SHA")"
+    NEW="$REMOTE/main..$LOCAL_SHA"
+  else
+    echo "[pre-push] $REMOTE/main을 몰라서 $LOCAL_REF 리뷰를 건너뜁니다" >&2
+    continue
+  fi
+  [ "$(git rev-list --count "$NEW")" = "0" ] && continue
+
+  echo "[pre-push] $LOCAL_REF: /review-code $RANGE (몇 분 걸림, 건너뛰려면 SKIP_REVIEW=1 git push)" >&2
+  # stdin은 위 while이 읽는 ref 목록이다. 실행기에 넘기지 않는다.
+  python3 scripts/review_code.py "$RANGE" </dev/null
+  CODE=$?
+  case "$CODE" in
+    0) ;;
+    1)
+      echo "[pre-push] 판정 Blocked: push를 중단합니다. 🔴나 verify 실패를 고친 뒤 다시 push하세요(급하면 SKIP_REVIEW=1 git push)" >&2
+      STATUS=1
+      ;;
+    *) echo "[pre-push] 리뷰를 실행하지 못했습니다(exit $CODE). push는 계속합니다" >&2 ;;
+  esac
+done
+
+exit "$STATUS"

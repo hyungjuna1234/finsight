@@ -45,7 +45,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 커밋 메시지는 conventional commits 형식을 따를 것 (feat:, fix:, docs:, refactor:, test:, chore:)
 - harness(`scripts/execute.py`)는 `codex exec --sandbox workspace-write`로 step을 돌린다. 샌드박스에서 `.git`은 읽기 전용이라 커밋은 하네스가 한다.
 - 가드 훅은 `scripts/hooks/*`에 있고 Codex(`.codex/hooks.json`)와 Claude Code(`.claude/settings.json`)가 같이 쓴다. `.codex/hooks.json`을 바꾸면 Codex `/hooks`에서 다시 신뢰해야 돈다.
-- 리뷰: `/review`는 규칙 체크리스트, `/review-code`는 차원별 에이전트(`.claude/agents/review-*.md`)를 동시에 돌린다. 심각도·판정·출력 형식은 `docs/REVIEW_GUIDE.md`를 따른다.
+- 리뷰: `/review`는 규칙 체크리스트, `/review-code`는 차원별 에이전트(`.claude/agents/review-*.md`)를 동시에 돌린다. 심각도·판정·출력 형식은 `docs/REVIEW_GUIDE.md`를 따른다. `git push`하면 `.githooks/pre-push`가 `scripts/review_code.py`로 `/review-code`를 돌려 Blocked면 push를 막는다(몇 분 걸림). 세션에서 이미 `/review-code`로 본 변경은 `SKIP_REVIEW=1 git push`로 건너뛴다. PR은 `.github/workflows/review.yml`이 verify와 리뷰를 돌려 PR에 리뷰를 단다(설정: `ops/README.md`).
 
 ## 명령어
 npm run dev      # 개발 서버

@@ -8,7 +8,7 @@ disable-model-invocation: true
 차원별 리뷰 에이전트를 동시에 띄워 리뷰하고, 결과를 합쳐 판정한다. 인자: `$ARGUMENTS`
 
 - 심각도·판정·출력 형식은 `docs/REVIEW_GUIDE.md`를 따른다. 먼저 읽는다.
-- 이 스킬은 메인 세션에서 실행한다. 서브에이전트는 다른 서브에이전트를 띄울 수 없으므로, 오케스트레이터는 메인이어야 한다.
+- 이 스킬은 메인 세션에서 실행한다(`context: fork` 없이). 메인이 에이전트 결과를 모아 판정하고 바로 보고한다.
 - 규칙 준수 체크리스트는 `/review`, 정확성 버그는 기본 제공 `/code-review`가 따로 맡는다.
 
 ## 차원
@@ -75,3 +75,12 @@ docs/REVIEW_GUIDE.md의 "차원 에이전트 보고" 형식으로 보고하라.
 ## 6. 기록하지 않는다
 
 `docs/reviews/`에 쓰지 않는다. `review-range.sh`는 그 기록으로 `/review`의 다음 범위를 정하므로, 세 차원만 본 결과를 남기면 `/review`가 그 범위를 건너뛴다. `/review`를 흡수할 때 기록도 이 스킬로 옮긴다.
+
+## 7. 헤드리스 실행 (`scripts/review_code.py`)
+
+pre-push 훅과 GitHub Actions는 `python3 scripts/review_code.py <범위>`로 이 스킬을 `claude -p`에서 부른다. 시스템 프롬프트에 "헤드리스 실행"이 있으면 1~4는 그대로 하고, 5 대신 아래를 따른다.
+- 에이전트 세 개가 모두 보고한 뒤에만 구조화 출력을 낸다. 먼저 끝난 차원만으로 결과를 내지 않는다.
+- 시스템 프롬프트에 `REVIEW_VERIFY=PASS` 또는 `REVIEW_VERIFY=FAIL`이 있으면 verify.sh를 돌리지 않고 그 값을 쓴다(CI의 verify job 결과).
+- Bash 명령은 하나씩 실행한다. `;`·`&&`로 잇지 않는다. 허용 규칙이 명령 단위라서 이어 붙이면 거부된다.
+- 구조화 출력은 `scripts/review-schema.json`을 따른다: `dimensions`(표의 차원), `verify`(PASS·FAIL·SKIPPED), `failed_dimensions`, `walkthrough`, `good_points`, `next_actions`, `comments`(4의 합친 결과, `body`는 인라인 4줄).
+- 판정·개수·요약 머리말은 실행기가 `comments`의 심각도와 verify 결과로 계산하므로 내지 않는다.

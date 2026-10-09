@@ -15,6 +15,7 @@ VERIFY = SCRIPTS / "verify.sh"
 WORKTREE_INIT = SCRIPTS / "worktree-init.sh"
 REVIEW_RANGE = SCRIPTS / "review-range.sh"
 STOP_VERIFY = SCRIPTS / "hooks" / "stop-verify.sh"
+PRE_PUSH = SCRIPTS.parent / ".githooks" / "pre-push"
 
 FAKE_NPM = """#!/bin/bash
 # 호출을 기록하고, NPM_FAIL(쉼표 목록)에 있는 스크립트는 실패시킨다.
@@ -62,7 +63,7 @@ def env(tmp_path):
     npm.chmod(0o755)
     log = tmp_path / "npm.log"
     log.write_text("")
-    e = {k: v for k, v in os.environ.items() if k not in ("CLAUDE_PROJECT_DIR", "NPM_FAIL", "GIT_DIR", "GIT_INDEX_FILE")}
+    e = {k: v for k, v in os.environ.items() if k not in ("CLAUDE_PROJECT_DIR", "NPM_FAIL", "GIT_DIR", "GIT_INDEX_FILE", "REVIEW_CODE_HEADLESS", "SKIP_REVIEW")}
     e["PATH"] = f"{bin_dir}:{e['PATH']}"
     e["NPM_LOG"] = str(log)
     return e
@@ -299,6 +300,13 @@ class TestStopVerify:
         run(STOP_VERIFY, cwd=repo, env=env, stdin=stop_input(repo))
         assert len(npm_calls(env)) == 3
 
+    def test_skips_inside_a_headless_review(self, tmp_path, env):
+        repo = make_repo(tmp_path / "r")
+        (repo / "wip.txt").write_text("uncommitted\n")
+        r = run(STOP_VERIFY, cwd=repo, env={**env, "REVIEW_CODE_HEADLESS": "1"}, stdin=stop_input(repo))
+        assert r.returncode == 0
+        assert npm_calls(env) == []
+
     def test_defers_to_a_running_harness(self, tmp_path, env):
         repo = make_repo(tmp_path / "r")
         (repo / ".git" / "harness.lock").write_text(str(os.getpid()))
@@ -319,3 +327,114 @@ class TestStopVerify:
         (repo / ".git" / "harness.lock").write_text(str(os.getpid()))
         run(STOP_VERIFY, cwd=repo, env=env, stdin=stop_input(repo))
         assert len(npm_calls(env)) == 3
+
+
+# ---------------------------------------------------------------------------
+# .githooks/pre-push
+
+ZERO = "0" * 40
+
+# 레포의 scripts/review_code.py 자리에 두는 가짜 실행기. 받은 범위를 기록하고 stdin을 다 읽은 뒤 RUNNER_EXIT로 끝낸다.
+FAKE_RUNNER = """import os, sys
+with open(os.environ["RUNNER_LOG"], "a") as log:
+    log.write(" ".join(sys.argv[1:]) + "\\n")
+sys.stdin.read()
+sys.exit(int(os.environ.get("RUNNER_EXIT", "0")))
+"""
+
+
+@pytest.fixture
+def pushing(tmp_path, env):
+    repo = make_repo(tmp_path / "r")
+    base = git(repo, "rev-parse", "HEAD")
+    git(repo, "update-ref", "refs/remotes/origin/main", base)
+    (repo / "scripts").mkdir()
+    (repo / "scripts" / "review_code.py").write_text(FAKE_RUNNER)
+    log = tmp_path / "runner.log"
+    log.write_text("")
+    return repo, base, {**env, "RUNNER_LOG": str(log)}, log
+
+
+def ref_line(local: str, remote: str, ref: str = "refs/heads/feat") -> str:
+    return f"{ref} {local} {ref} {remote}\n"
+
+
+def short(repo: Path, sha: str) -> str:
+    return git(repo, "rev-parse", "--short", sha)
+
+
+def reviewed(log: Path) -> list[str]:
+    return [line for line in log.read_text().splitlines() if line]
+
+
+class TestPrePush:
+    def test_reviews_the_commits_being_pushed(self, pushing):
+        repo, base, env, log = pushing
+        head = commit(repo, "change")
+        r = run(PRE_PUSH, "origin", "url", cwd=repo, env=env, stdin=ref_line(head, base))
+        assert r.returncode == 0
+        assert reviewed(log) == [f"{short(repo, base)}..{short(repo, head)}"]
+
+    def test_reviews_a_new_branch_against_the_remote_main(self, pushing):
+        repo, _, env, log = pushing
+        head = commit(repo, "change")
+        run(PRE_PUSH, "origin", "url", cwd=repo, env=env, stdin=ref_line(head, ZERO))
+        assert reviewed(log) == [f"origin/main...{short(repo, head)}"]
+
+    def test_falls_back_to_the_remote_main_when_the_remote_tip_is_unknown(self, pushing):
+        repo, _, env, log = pushing
+        head = commit(repo, "change")
+        run(PRE_PUSH, "origin", "url", cwd=repo, env=env, stdin=ref_line(head, "f" * 40))
+        assert reviewed(log) == [f"origin/main...{short(repo, head)}"]
+
+    def test_blocks_the_push_when_the_verdict_is_blocked(self, pushing):
+        repo, base, env, _ = pushing
+        head = commit(repo, "change")
+        r = run(PRE_PUSH, "origin", "url", cwd=repo, env={**env, "RUNNER_EXIT": "1"}, stdin=ref_line(head, base))
+        assert r.returncode == 1
+        assert "Blocked" in r.stderr and "SKIP_REVIEW=1" in r.stderr
+
+    def test_lets_the_push_through_when_the_review_cannot_run(self, pushing):
+        repo, base, env, _ = pushing
+        head = commit(repo, "change")
+        r = run(PRE_PUSH, "origin", "url", cwd=repo, env={**env, "RUNNER_EXIT": "2"}, stdin=ref_line(head, base))
+        assert r.returncode == 0
+        assert "계속" in r.stderr
+
+    def test_reviews_every_pushed_ref_even_if_the_runner_reads_stdin(self, pushing):
+        repo, base, env, log = pushing
+        head = commit(repo, "change")
+        stdin = ref_line(head, base, "refs/heads/a") + ref_line(head, base, "refs/heads/b")
+        run(PRE_PUSH, "origin", "url", cwd=repo, env=env, stdin=stdin)
+        assert len(reviewed(log)) == 2
+
+    @pytest.mark.parametrize("case", ["deleted", "nothing_new"])
+    def test_skips_refs_without_new_commits(self, pushing, case):
+        repo, base, env, log = pushing
+        line = ref_line(ZERO, base) if case == "deleted" else ref_line(base, base)
+        r = run(PRE_PUSH, "origin", "url", cwd=repo, env=env, stdin=line)
+        assert r.returncode == 0
+        assert reviewed(log) == []
+
+    def test_skips_when_asked(self, pushing):
+        repo, base, env, log = pushing
+        head = commit(repo, "change")
+        r = run(PRE_PUSH, "origin", "url", cwd=repo, env={**env, "SKIP_REVIEW": "1"}, stdin=ref_line(head, base))
+        assert r.returncode == 0
+        assert reviewed(log) == []
+
+    def test_skips_while_the_harness_runs(self, pushing):
+        repo, base, env, log = pushing
+        head = commit(repo, "change")
+        (repo / ".git" / "harness.lock").write_text(str(os.getpid()))
+        r = run(PRE_PUSH, "origin", "url", cwd=repo, env=env, stdin=ref_line(head, base))
+        assert r.returncode == 0
+        assert reviewed(log) == []
+
+    def test_skips_a_new_branch_when_the_remote_main_is_unknown(self, pushing):
+        repo, _, env, log = pushing
+        git(repo, "update-ref", "-d", "refs/remotes/origin/main")
+        head = commit(repo, "change")
+        r = run(PRE_PUSH, "origin", "url", cwd=repo, env=env, stdin=ref_line(head, ZERO))
+        assert r.returncode == 0
+        assert reviewed(log) == []

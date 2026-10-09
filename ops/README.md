@@ -46,3 +46,11 @@ brew install gitleaks
 - [ ] 배포 후 `curl -I https://<도메인>`로 CSP·HSTS 등 보안 헤더 확인
 - [ ] 5-launch 이후: 가이드 문구 확인, 업타임 모니터
 - [ ] 런칭 전: Polar KYC, Vercel Pro, preview/production env 분리, 도메인, 법률 검토
+
+## 자동 리뷰 (`/review-code`)
+- 로컬: `git push`하면 `.githooks/pre-push`가 리뷰한다(`git config core.hooksPath .githooks`가 되어 있어야 한다). 판정이 Blocked면 push가 막힌다. 급하면 `SKIP_REVIEW=1 git push`.
+- PR: `.github/workflows/review.yml`이 verify와 리뷰를 돌리고 PR에 리뷰를 단다. 처음 한 번 아래를 한다.
+  - [ ] 터미널에서 `claude setup-token` → GitHub 저장소 Settings → Secrets and variables → Actions에 `CLAUDE_CODE_OAUTH_TOKEN`으로 등록. 토큰은 만든 사람의 Claude 구독 사용량을 쓴다
+  - [ ] `brew install gh && gh auth login` (PR 만들기·확인용)
+  - [ ] 첫 PR에서 리뷰가 달리는지 확인한 뒤 main에 branch protection: `verify`·`review` 필수, 직접 push 금지
+- 워크플로는 PR head의 `scripts/`·`.claude/` 설정으로 secret을 쓴다. 쓰기 권한이 있는 사람의 같은 레포 PR만 돌고, 포크 PR은 건너뛴다.
