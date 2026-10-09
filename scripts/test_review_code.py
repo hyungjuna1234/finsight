@@ -46,7 +46,10 @@ def review(comments=(), verify="PASS", failed=()) -> dict:
 
 
 def result(structured=None, **extra) -> dict:
-    data = {"type": "result", "subtype": "success", "is_error": False, "result": "", "total_cost_usd": 1.5}
+    data = {
+        "type": "result", "subtype": "success", "is_error": False, "result": "", "total_cost_usd": 1.5,
+        "modelUsage": {"claude-opus-5-5": {"costUSD": 1.4}, "claude-haiku-4-5": {"costUSD": 0.1}},
+    }
     if structured is not None:
         data["structured_output"] = structured
     data.update(extra)
@@ -135,6 +138,14 @@ class TestCommand:
         assert all(not tool.startswith("Bash(") or tool.endswith(" *)") for tool in allowed)
         assert "Bash(git push *)" not in allowed
 
+    def test_pins_the_model_and_effort_so_local_and_ci_match(self):
+        cmd = rc.build_command("a..b")
+        assert cmd[cmd.index("--model") + 1] == rc.DEFAULT_MODEL
+        assert cmd[cmd.index("--effort") + 1] == rc.DEFAULT_EFFORT
+        other = rc.build_command("a..b", model="sonnet", effort="high")
+        assert other[other.index("--model") + 1] == "sonnet"
+        assert other[other.index("--effort") + 1] == "high"
+
     def test_passes_the_verify_result_only_when_given(self):
         without = rc.build_command("a..b")
         with_verify = rc.build_command("a..b", verify="FAIL")
@@ -214,6 +225,22 @@ class TestScript:
         assert data["range"] == "a..b"
         assert data["summary_markdown"].startswith("## 판정: Changes Requested")
         assert len(data["comments"]) == 2
+        assert data["models"] == ["claude-haiku-4-5", "claude-opus-5-5"]
+        assert data["cost_usd"] == 1.5
+
+    def test_reports_the_models_it_used(self, fake):
+        env, respond, _ = fake
+        respond(result(review()))
+        proc = run(env, "a..b")
+        assert "claude-opus-5-5" in proc.stderr and "$1.50" in proc.stderr
+
+    def test_takes_the_model_and_effort_from_the_environment(self, fake):
+        env, respond, tmp = fake
+        respond(result(review()))
+        run({**env, "REVIEW_CODE_MODEL": "sonnet", "REVIEW_CODE_EFFORT": "medium"}, "a..b")
+        args = (tmp / "args").read_text().splitlines()
+        assert args[args.index("--model") + 1] == "sonnet"
+        assert args[args.index("--effort") + 1] == "medium"
 
     def test_does_not_hand_its_stdin_to_claude(self, fake):
         env, respond, tmp = fake
