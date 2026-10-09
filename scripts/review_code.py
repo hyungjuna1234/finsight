@@ -156,8 +156,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("range", help="리뷰할 git 범위(예: origin/main...HEAD)")
     parser.add_argument("--verify", choices=["PASS", "FAIL"], help="이미 돌린 verify.sh 결과")
     parser.add_argument("--json-out", help="결과 JSON을 저장할 파일")
-    parser.add_argument("--model", default=os.environ.get("REVIEW_CODE_MODEL", DEFAULT_MODEL))
-    parser.add_argument("--effort", default=os.environ.get("REVIEW_CODE_EFFORT", DEFAULT_EFFORT))
+    parser.add_argument("--model", default=os.environ.get("REVIEW_CODE_MODEL") or DEFAULT_MODEL)
+    parser.add_argument("--effort", default=os.environ.get("REVIEW_CODE_EFFORT") or DEFAULT_EFFORT)
     args = parser.parse_args(argv)
 
     timeout = int(os.environ.get("REVIEW_CODE_TIMEOUT_S", DEFAULT_TIMEOUT_S))
@@ -178,14 +178,15 @@ def main(argv: list[str] | None = None) -> int:
     print(f"review_code: 모델 {', '.join(models) or '알 수 없음'} · effort {args.effort} · 비용 약 ${cost:.2f}(정가 기준 추정)", file=sys.stderr)
 
     if args.json_out:
+        # review를 먼저 펼친다. 모델이 덧붙인 키가 계산한 값을 덮어쓰지 못한다.
         Path(args.json_out).write_text(json.dumps({
+            **review,
             "range": args.range,
             "verdict": verdict,
             "counts": counts,
             "summary_markdown": render_summary(review, args.range),
             "models": models,
             "cost_usd": cost,
-            **review,
         }, ensure_ascii=False, indent=2))
     return 1 if verdict == "Blocked" else 0
 
