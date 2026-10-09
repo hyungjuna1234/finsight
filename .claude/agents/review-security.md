@@ -23,7 +23,7 @@ model: inherit
 2. **읽기 경로**: `src/server/queries/*` 함수의 첫 줄은 `requireUser()`다. admin 함수(`src/server/admin.ts`)에는 세션에서 온 `userId`·경로만 넘긴다(요청 body 값 금지).
 3. **리다이렉트**: 사용자 입력이 들어간 리다이렉트는 `safeRedirect()`를 거친다.
 4. **RLS·DB** (`supabase/migrations/`): 새 테이블은 RLS를 켜고 `(select auth.uid()) = user_id` 정책, `anon` 권한 회수, `user_id` FK는 `auth.users` on delete cascade. `entitlements`에는 사용자 쓰기 정책이 없다. `ai_usage`에는 UPDATE·DELETE 정책이 없다. Storage 버킷에는 사용자 정책이 없다.
-5. **사용자가 바꿀 수 있는 값**: 사용자는 자기 JWT로 "본인 전체" 테이블(`uploads`·`transactions`·`cards` 등)을 직접 고칠 수 있다. 서버가 그런 컬럼(예: `uploads.status`·`uploads.mapping`)이나 body 값을 권한·상태·과금 판단에 그대로 믿지 않는가.
+5. **사용자가 바꿀 수 있는 값**: 사용자는 자기 JWT로 "본인 전체" 테이블(`transactions`·`cards` 등)과 `uploads`의 처리 컬럼(`status`·`mapping` 등)을 직접 고칠 수 있다(`uploads` insert는 admin만). 서버가 그런 컬럼(예: `uploads.status`·`uploads.mapping`)이나 body 값을 권한·상태·과금 판단에 그대로 믿지 않는가.
 6. **Pro·상한**: Pro 기능은 서버에서 `requirePro()`. Claude 호출 전에 `assertDailyLimit()`, 호출 **직후** `recordAiUsage()` — 뒤 단계(저장·파싱)가 실패해도 기록이 남는가. 무료 인사이트 크레딧은 호출 전에 `markFreeInsightUsed`로 선점하고 실패하면 `releaseFreeInsight`.
 7. **비밀키**: 비밀 env는 `src/server/env.ts`(`server-only`)에서만 읽는다. `NEXT_PUBLIC_`은 APP_URL·SUPABASE_URL·SUPABASE_ANON_KEY만. `"use client"` 파일이 server 모듈을 import하지 않는다. admin client는 `src/server/admin.ts`에서만 만든다.
 8. **웹훅·cron·결제**: `webhooks/polar`는 `polar.validateWebhook`으로 서명을 검증한 뒤 처리하고(실패 403), 사용자는 `external_id`로만 찾는다. `cron/cleanup`은 `CRON_SECRET`을 비교한다. checkout·confirm은 본인 checkout인지 확인한다.

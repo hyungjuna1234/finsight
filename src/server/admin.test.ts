@@ -103,6 +103,21 @@ describe("admin storage", () => {
 describe("admin uploads", () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it("creates an upload row with a server-built storage path", async () => {
+    const insert = vi.fn().mockResolvedValue({ error: null });
+    mocks.from.mockReturnValue({ insert });
+    const uploadId = "3ae40653-f46b-48ee-a316-8717841740c6";
+    const userId = "11111111-1111-4111-8111-111111111111";
+    await expect(adminUploads.create({ userId, uploadId, filename: "card.csv", sha256: "a".repeat(64), byteSize: 10 })).resolves.toBe("created");
+    expect(mocks.from).toHaveBeenCalledWith("uploads");
+    expect(insert).toHaveBeenCalledWith({ id: uploadId, user_id: userId, storage_path: `${userId}/${uploadId}/original`, filename: "card.csv", sha256: "a".repeat(64), byte_size: 10, status: "uploaded" });
+  });
+
+  it("reports a concurrent duplicate upload instead of failing", async () => {
+    mocks.from.mockReturnValue({ insert: vi.fn().mockResolvedValue({ error: { code: "23505" } }) });
+    await expect(adminUploads.create({ userId: "11111111-1111-4111-8111-111111111111", uploadId: "3ae40653-f46b-48ee-a316-8717841740c6", filename: "a.csv", sha256: "b".repeat(64), byteSize: 1 })).resolves.toBe("duplicate");
+  });
+
   it("marks only originals that are not already marked", async () => {
     const select = vi.fn().mockResolvedValue({ data: [{ id: "one" }], error: null });
     const inIds = vi.fn(() => ({ select }));

@@ -37,14 +37,19 @@ describe("database RLS and grants", () => {
     await asUser(db, USER_A);
     const card = await db.query<{ id: string }>("insert into cards (user_id, name) values ($1, 'A 카드') returning id", [USER_A]);
     const cardId = card.rows[0]!.id;
+    await asService(db);
     const upload = await db.query<{ id: string }>("insert into uploads (id, user_id, card_id, storage_path, filename, sha256, byte_size, status) values ($3::uuid, $1::uuid, $2, $1::text || '/' || $3::text || '/original', 'a.csv', 'sha-a', 10, 'uploaded') returning id", [USER_A, cardId, UPLOAD_A]);
+    await asUser(db, USER_A);
     await db.query("insert into transactions (user_id, card_id, upload_id, occurred_on, merchant_raw, merchant_key, amount_krw, kind, status, category, category_source, identity_key) values ($1, $2, $3, '2026-09-01', '상점', '상점', 1000, 'spend', 'posted', '식비', 'rule', 'tx-a')", [USER_A, cardId, upload.rows[0]!.id]);
     await db.query("insert into insights (user_id, month, content) values ($1, '2026-09', '{}')", [USER_A]);
 
     await asUser(db, USER_B);
     for (const table of ["cards", "uploads", "transactions", "insights"]) {
       const selected = await db.query(`select * from ${table}`);
-      const updated = await db.query(`update ${table} set user_id = $1 where user_id = $2`, [USER_B, USER_A]);
+      // uploads는 처리 컬럼만 고칠 수 있으므로 그 컬럼으로 다른 사용자 행이 안 보이는지 확인한다.
+      const updated = table === "uploads"
+        ? await db.query("update uploads set status = 'done' where user_id = $1", [USER_A])
+        : await db.query(`update ${table} set user_id = $1 where user_id = $2`, [USER_B, USER_A]);
       const deleted = await db.query(`delete from ${table} where user_id = $1`, [USER_A]);
       expect(selected.rows).toHaveLength(0);
       expect(updated.affectedRows).toBe(0);
@@ -93,7 +98,9 @@ describe("database RLS and grants", () => {
   it("rejects transaction categories outside the domain list", async () => {
     await asUser(db, USER_A);
     const card = await db.query<{ id: string }>("insert into cards (user_id, name) values ($1, 'A 카드') returning id", [USER_A]);
+    await asService(db);
     const upload = await db.query<{ id: string }>("insert into uploads (id, user_id, storage_path, filename, sha256, byte_size, status) values ($2::uuid, $1::uuid, $1::text || '/' || $2::text || '/original', 'a.csv', 'sha-a', 10, 'uploaded') returning id", [USER_A, UPLOAD_A]);
+    await asUser(db, USER_A);
     await expectDenied(db.query("insert into transactions (user_id, card_id, upload_id, occurred_on, merchant_raw, merchant_key, amount_krw, kind, status, category, category_source, identity_key) values ($1, $2, $3, '2026-09-01', '상점', '상점', 1000, 'spend', 'posted', '잘못된 분류', 'rule', 'bad')", [USER_A, card.rows[0]!.id, upload.rows[0]!.id]));
   });
 
@@ -106,7 +113,7 @@ describe("database RLS and grants", () => {
   });
 
   it("enforces owner-scoped upload storage paths on insert and update", async () => {
-    await asUser(db, USER_A);
+    await asService(db);
     await db.query(
       "insert into uploads (id, user_id, storage_path, filename, sha256, byte_size, status) values ($2::uuid, $1::uuid, $1::text || '/' || $2::text || '/original', 'valid.csv', 'sha-valid', 10, 'uploaded')",
       [USER_A, UPLOAD_A],
@@ -119,5 +126,22 @@ describe("database RLS and grants", () => {
     await expect(
       db.query("update uploads set storage_path = $1 || '/' || id || '/original' where id = $2", [USER_B, UPLOAD_A]),
     ).rejects.toMatchObject({ code: "23514" });
+  });
+
+  it("lets only the server create uploads and limits owner updates to processing columns", async () => {
+    const insert = "insert into uploads (id, user_id, storage_path, filename, sha256, byte_size, status, created_at) values ($2::uuid, $1::uuid, $1::text || '/' || $2::text || '/original', 'a.csv', 'sha-a', 10, 'uploaded', '2020-01-01')";
+    await asUser(db, USER_A);
+    await expectDenied(db.query(insert, [USER_A, UPLOAD_A]));
+
+    await asService(db);
+    await db.query(insert, [USER_A, UPLOAD_A]);
+    await asUser(db, USER_A);
+    await expectDenied(db.query("update uploads set created_at = now() where id = $1", [UPLOAD_A]));
+    await expectDenied(db.query("update uploads set original_deleted_at = now() where id = $1", [UPLOAD_A]));
+    await expectDenied(db.query("update uploads set storage_path = storage_path where id = $1", [UPLOAD_A]));
+    const updated = await db.query("update uploads set status = 'awaiting_confirm', mapping = '{}', header_signature = 'sig', error_code = null, period_from = '2026-09-01', period_to = '2026-09-30', counts = '{}', card_id = null where id = $1", [UPLOAD_A]);
+    expect(updated.affectedRows).toBe(1);
+    const deleted = await db.query("delete from uploads where id = $1", [UPLOAD_A]);
+    expect(deleted.affectedRows).toBe(1);
   });
 });

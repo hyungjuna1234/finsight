@@ -12,7 +12,7 @@
 - **A06-5 권한 분리(CWE-269·501)**: admin(service role) 권한은 `src/server/admin.ts`의 좁은 함수로만 쓴다(ARCHITECTURE 목록). 테이블 이름·필터를 받는 범용 admin 함수가 생기면 🟠.
 - **A06-6 경쟁 조건(CWE-362)**: 돈·크레딧·권한에 닿는 check-then-act(무료 크레딧, `upsertIfNewer`, 탈퇴 중 업로드). AR-03 밖의 경쟁 조건은 🟡~🟠.
 - **A06-7 자격증명 보관(CWE-256·522)**: PDF 비밀번호는 요청 body(POST)로만 오고 메모리에서만 쓴다(ADR-012). DB·Storage·로그·오류 메시지·분석 이벤트·URL 쿼리·클라이언트 저장소에 남으면 🔴.
-- **A06-8 보관·삭제**: 원본 90일 삭제, 24시간 지난 미완료 업로드 정리, 탈퇴 시 cascade + Storage prefix 삭제 + Polar 구독 해지. AR-08(사용자가 `created_at`·`original_deleted_at` 수정)은 수용됨.
+- **A06-8 보관·삭제**: 원본 90일 삭제, 24시간 지난 미완료 업로드 정리, 탈퇴 시 cascade + Storage prefix 삭제 + Polar 구독 해지. 사용자가 정리 기준 컬럼(`created_at`·`original_deleted_at`)을 고칠 수 없는지(마이그레이션의 컬럼 grant) 확인한다.
 
 ## A09:2025 Security Logging and Alerting Failures (로깅·알림 실패)
 공격을 기록·탐지·알림하지 못하거나, 로그로 민감 정보가 새는 문제. 2025년판은 "모니터링"을 "알림"으로 바꿨다.

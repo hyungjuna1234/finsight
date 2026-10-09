@@ -17,7 +17,7 @@ import { readPdf } from "@/lib/ingest/pdf";
 import { pdfTable, suggestPdfMapping } from "@/lib/ingest/pdf-table";
 import { sniffFile } from "@/lib/ingest/sniff";
 import { detectTable, isSummaryRow, tableAtHeader, type TableGuess } from "@/lib/ingest/table";
-import { adminStorage, storagePathFor } from "@/server/admin";
+import { adminStorage, adminUploads, storagePathFor } from "@/server/admin";
 import { categorizeTransactions } from "@/server/actions/categorize";
 import { withAiUsage } from "@/server/ai-usage";
 import { assertDailyLimit } from "@/server/limits";
@@ -94,10 +94,9 @@ export async function createUpload(userId: string, input: z.infer<typeof createU
     const { error } = await supabase.from("uploads").delete().eq("user_id", userId).eq("id", existing.id); db(error);
   }
   await assertDailyLimit(userId, "uploads");
-  const uploadId = randomUUID(); const storagePath = storagePathFor(userId, uploadId);
-  const { error } = await supabase.from("uploads").insert({ id: uploadId, user_id: userId, storage_path: storagePath, filename: input.filename, sha256: input.sha256, byte_size: input.size, status: "uploaded" });
-  if (error?.code === "23505") fail("DUPLICATE_FILE"); db(error);
-  return { uploadId, uploadUrl: await adminStorage.createUploadUrl(storagePath) };
+  const uploadId = randomUUID();
+  if (await adminUploads.create({ userId, uploadId, filename: input.filename, sha256: input.sha256, byteSize: input.size }) === "duplicate") fail("DUPLICATE_FILE");
+  return { uploadId, uploadUrl: await adminStorage.createUploadUrl(storagePathFor(userId, uploadId)) };
 }
 
 function mappingFrom(value: Json | null): ColumnMapping | null {
