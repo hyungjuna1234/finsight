@@ -172,7 +172,7 @@ def fake(tmp_path):
     claude.write_text(FAKE_CLAUDE)
     claude.chmod(0o755)
     out = tmp_path / "claude.out"
-    env = {k: v for k, v in os.environ.items() if not k.startswith("FAKE_CLAUDE")}
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("FAKE_CLAUDE", "REVIEW_CODE_"))}
     env.update(
         PATH=f"{bin_dir}:/usr/bin:/bin",
         FAKE_CLAUDE_OUT=str(out),
@@ -232,7 +232,31 @@ class TestScript:
         env, respond, _ = fake
         respond(result(review()))
         proc = run(env, "a..b")
-        assert "claude-opus-5-5" in proc.stderr and "$1.50" in proc.stderr
+        # claude-haiku-4-5는 요청하지 않은 모델이라, 요청값이 아니라 modelUsage를 찍는지 확인된다.
+        assert "모델 claude-haiku-4-5, claude-opus-5-5 · effort xhigh" in proc.stderr
+        assert "$1.50" in proc.stderr
+
+    @pytest.mark.parametrize("usage", [None, {}])
+    def test_reports_unknown_models_without_failing(self, fake, usage):
+        env, respond, tmp = fake
+        data = result(review(), modelUsage=usage)
+        del data["total_cost_usd"]
+        respond(data)
+        out = tmp / "review.json"
+        proc = run(env, "a..b", "--json-out", str(out))
+        assert proc.returncode == 0
+        assert "모델 알 수 없음" in proc.stderr
+        saved = json.loads(out.read_text())
+        assert saved["models"] == [] and saved["cost_usd"] == 0
+
+    def test_pins_the_model_and_effort_when_nothing_overrides_them(self, fake):
+        # pre-push와 review.yml은 플래그 없이 부른다. 실제 고정은 main()의 기본값이 맡는다.
+        env, respond, tmp = fake
+        respond(result(review()))
+        run(env, "a..b")
+        args = (tmp / "args").read_text().splitlines()
+        assert args[args.index("--model") + 1] == rc.DEFAULT_MODEL
+        assert args[args.index("--effort") + 1] == rc.DEFAULT_EFFORT
 
     def test_takes_the_model_and_effort_from_the_environment(self, fake):
         env, respond, tmp = fake
@@ -241,6 +265,14 @@ class TestScript:
         args = (tmp / "args").read_text().splitlines()
         assert args[args.index("--model") + 1] == "sonnet"
         assert args[args.index("--effort") + 1] == "medium"
+
+    def test_flags_win_over_the_environment(self, fake):
+        env, respond, tmp = fake
+        respond(result(review()))
+        run({**env, "REVIEW_CODE_MODEL": "sonnet", "REVIEW_CODE_EFFORT": "medium"}, "a..b", "--model", "haiku", "--effort", "low")
+        args = (tmp / "args").read_text().splitlines()
+        assert args[args.index("--model") + 1] == "haiku"
+        assert args[args.index("--effort") + 1] == "low"
 
     def test_does_not_hand_its_stdin_to_claude(self, fake):
         env, respond, tmp = fake
