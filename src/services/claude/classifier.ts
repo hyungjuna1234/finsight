@@ -4,9 +4,8 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 
 import { CATEGORIES, DEFAULT_CATEGORY, isCategory, type Category } from "@/lib/domain/categories";
-import { AppError } from "@/lib/domain/errors";
 import { getClaude } from "@/services/claude/client";
-import { MODELS, toUsage, type ClaudeUsage } from "@/services/claude/models";
+import { AiCallError, MODELS, toUsage, type ClaudeUsage } from "@/services/claude/models";
 
 const outputSchema = z.object({
   items: z.array(z.object({
@@ -47,11 +46,11 @@ export async function classify(merchantKeys: string[]): Promise<{
       { timeout: 30_000 },
     );
   } catch {
-    throw new AppError("AI_UNAVAILABLE");
+    throw new AiCallError({ model: MODELS.classify, inputTokens: 0, outputTokens: 0 });
   }
 
   if (response.stop_reason !== "end_turn" || response.parsed_output === null) {
-    throw new AppError("AI_UNAVAILABLE");
+    throw new AiCallError(toUsage(MODELS.classify, response.usage));
   }
 
   const byIndex = new Map<number, Category>();

@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { recordAiUsage } from "@/server/limits";
+import { AiCallError } from "@/services/claude/models";
 import { syntheticPdf } from "@/test/fixtures/pdf";
 
 const { categorizeTransactions, createServerSupabase, proposeMapping, storageRead } = vi.hoisted(() => ({
@@ -135,5 +137,37 @@ describe("upload categorization limits", () => {
 
     await expect(recategorizeUpload("user-1", upload.id)).rejects.toMatchObject({ code: "RATE_LIMITED", status: 429 });
     expect(client.from).toHaveBeenLastCalledWith("uploads");
+  });
+});
+
+describe("analyze mapping usage", () => {
+  const uploadId = "5b0f4e8e-2c1d-4f6a-9b3e-0d2c4a6b8e10";
+  const csv = new TextEncoder().encode("이용일,가맹점,금액\n2026-09-01,가게,1000\n2026-09-02,다른 가게,2000\n2026-09-03,세번째,3000\n");
+
+  beforeEach(() => {
+    proposeMapping.mockReset();
+    vi.mocked(recordAiUsage).mockReset();
+    storageRead.mockReset().mockResolvedValue(csv);
+    const upload = { id: uploadId, user_id: "user-1", status: "uploaded", filename: "card.csv", storage_path: `user-1/${uploadId}/original`, sha256: createHash("sha256").update(csv).digest("hex"), mapping: null };
+    createServerSupabase.mockReset().mockResolvedValue({
+      from: vi.fn((table: string) => {
+        const query = {
+          select: vi.fn(() => query),
+          eq: vi.fn(() => query),
+          update: vi.fn(() => query),
+          maybeSingle: vi.fn(async () => ({ data: table === "uploads" ? upload : null, error: null })),
+          then(resolve: (value: unknown) => unknown) { return Promise.resolve(resolve({ error: null })); },
+        };
+        return query;
+      }),
+    });
+  });
+
+  it("Claude가 응답 뒤 실패해도 매핑 토큰을 기록하고 매핑 없이 계속한다", async () => {
+    const usage = { model: "m", inputTokens: 11, outputTokens: 5 };
+    proposeMapping.mockRejectedValueOnce(new AiCallError(usage));
+    const result = await analyzeUpload("user-1", uploadId);
+    expect(result.mapping).toBeNull();
+    expect(vi.mocked(recordAiUsage).mock.calls).toEqual([["user-1", "mapping", usage]]);
   });
 });

@@ -6,7 +6,7 @@ import { CHAT_LIMITS, type ChatTurn } from "@/lib/domain/chat";
 import { AppError } from "@/lib/domain/errors";
 import type { IsoDate } from "@/lib/domain/types";
 import { getClaude } from "@/services/claude/client";
-import { MODELS, toUsage, type ClaudeUsage } from "@/services/claude/models";
+import { AiCallError, MODELS, toUsage, type ClaudeUsage } from "@/services/claude/models";
 
 export interface ChatTool<S extends z.ZodType = z.ZodType> {
   name: string;
@@ -53,6 +53,7 @@ export async function chat(input: { history: ChatTurn[]; message: string; tools:
     if (!text) throw new AppError("AI_UNAVAILABLE");
     return { text, usage };
   } catch {
-    throw new AppError("AI_UNAVAILABLE");
+    // 도구 반복 중 일부 응답의 토큰은 이미 과금됐다. 호출자가 상한에 세도록 누적값을 넘긴다.
+    throw new AiCallError({ model: MODELS.chat, inputTokens, outputTokens });
   }
 }

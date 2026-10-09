@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppError } from "@/lib/domain/errors";
-import { MODELS } from "@/services/claude/models";
+import { AiCallError, MODELS } from "@/services/claude/models";
 
 const { parseMock } = vi.hoisted(() => ({ parseMock: vi.fn() }));
 
@@ -127,4 +127,12 @@ describe("proposeMapping", () => {
       });
     },
   );
+
+  it("열 번호 검증에 실패해도 쓴 토큰을 AiCallError에 담는다", async () => {
+    const base = response();
+    parseMock.mockResolvedValue({ ...base, parsed_output: { ...base.parsed_output, date: 99 } });
+    const error = await proposeMapping({ headers, samples }).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(AiCallError);
+    expect(error).toMatchObject({ code: "AI_UNAVAILABLE", usage: { model: MODELS.mapping, inputTokens: 31, outputTokens: 17 } });
+  });
 });

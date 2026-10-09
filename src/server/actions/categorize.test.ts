@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppError } from "@/lib/domain/errors";
-import type { ClaudeUsage } from "@/services/claude/models";
+import { AiCallError, type ClaudeUsage } from "@/services/claude/models";
 
 const { classify, createServerSupabase, info, recordAiUsage, remainingDailyQuota, warn } = vi.hoisted(() => ({
   classify: vi.fn(),
@@ -123,6 +123,15 @@ describe("categorizeTransactions", () => {
 
     await vi.waitFor(() => expect(classify).toHaveBeenCalledTimes(2));
     expect(recordAiUsage.mock.calls).toEqual([["user-1", "classify", usage(100)]]);
+  });
+
+  it("Claude가 응답 뒤 실패해도 그 배치의 토큰을 기록하고 pending으로 둔다", async () => {
+    createServerSupabase.mockResolvedValue(fakeClient([], []).client);
+    classify.mockRejectedValueOnce(new AiCallError(usage(3)));
+    const result = await categorizeTransactions("user-1", [{ merchantKey: "미지 상점" }]);
+    expect(result.aiFailed).toBe(true);
+    expect(recordAiUsage.mock.calls).toEqual([["user-1", "classify", usage(3)]]);
+    expect(result.byKey.get("미지 상점")).toEqual({ category: "기타", source: "pending" });
   });
 
   it("사용량 기록이 실패하면 AI 실패로 숨기지 않고 에러를 그대로 낸다", async () => {

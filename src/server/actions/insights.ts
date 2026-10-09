@@ -7,7 +7,8 @@ import { addDays, kstToday, monthRange, prevMonth } from "@/lib/domain/month";
 import type { YearMonth } from "@/lib/domain/types";
 import { adminEntitlements } from "@/server/admin";
 import { getPlan, requireConsent } from "@/server/auth";
-import { assertDailyLimit, recordAiUsage } from "@/server/limits";
+import { withAiUsage } from "@/server/ai-usage";
+import { assertDailyLimit } from "@/server/limits";
 import { logger } from "@/server/logger";
 import { loadTxViews } from "@/server/tx-rows";
 import { writeInsight } from "@/services/claude/insight";
@@ -34,9 +35,8 @@ export async function generateInsight(userId: string, month: YearMonth): Promise
   let content: InsightContent;
   let createdAt: string | undefined;
   try {
-    const result = await writeInsight(metrics);
+    const result = await withAiUsage(userId, "insight", () => writeInsight(metrics));
     content = result.content;
-    await recordAiUsage(userId, "insight", result.usage);
     const { data, error } = await sb.from("insights").upsert({ user_id: userId, month, content }, { onConflict: "user_id,month" }).select("created_at");
     if (error) throw new AppError("INTERNAL");
     createdAt = data?.[0]?.created_at;

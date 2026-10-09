@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppError } from "@/lib/domain/errors";
-import { MODELS } from "@/services/claude/models";
+import { AiCallError, MODELS } from "@/services/claude/models";
 
 const parse = vi.fn();
 vi.mock("@/services/claude/client", () => ({
@@ -68,5 +68,19 @@ describe("classify", () => {
   it("100개를 초과하면 호출 전에 거절한다", async () => {
     await expect(classify(Array.from({ length: 101 }, (_, i) => `상점${i}`))).rejects.toBeInstanceOf(RangeError);
     expect(parse).not.toHaveBeenCalled();
+  });
+
+  it("응답을 받은 뒤 실패하면 쓴 토큰을 AiCallError에 담는다", async () => {
+    parse.mockResolvedValue({ ...response([]), stop_reason: "max_tokens", parsed_output: null });
+    const error = await classify(["가맹점"]).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(AiCallError);
+    expect(error).toMatchObject({ code: "AI_UNAVAILABLE", usage: { model: MODELS.classify, inputTokens: 12, outputTokens: 8 } });
+  });
+
+  it("응답 전에 실패하면 토큰 0인 AiCallError를 던진다", async () => {
+    parse.mockImplementationOnce(() => { throw new Error("network"); });
+    const error = await classify(["가맹점"]).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(AiCallError);
+    expect((error as AiCallError).usage).toEqual({ model: MODELS.classify, inputTokens: 0, outputTokens: 0 });
   });
 });

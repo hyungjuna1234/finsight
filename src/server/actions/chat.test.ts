@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { AiCallError } from "@/services/claude/models";
 import { AppError } from "@/lib/domain/errors";
 
 const mocks = vi.hoisted(() => ({ requireConsent: vi.fn(), requirePro: vi.fn(), assertDailyLimit: vi.fn(), recordAiUsage: vi.fn(), loadTxViews: vi.fn(), chat: vi.fn(), createSb: vi.fn() }));
@@ -49,6 +51,12 @@ describe("sendChatMessage", () => {
     expect(mocks.requirePro).toHaveBeenCalledWith("owner");
     expect(mocks.assertDailyLimit).toHaveBeenCalledWith("owner", "chat");
     expect(mocks.recordAiUsage).toHaveBeenCalledWith("owner", "chat", expect.anything());
+  });
+  it("Claude가 응답 뒤 실패해도 쓴 토큰을 기록한다", async () => {
+    const usage = { model: "m", inputTokens: 9, outputTokens: 4 };
+    mocks.chat.mockRejectedValueOnce(new AiCallError(usage));
+    await expect(sendChatMessage("owner", { history: [], message: "질문" })).rejects.toMatchObject({ code: "AI_UNAVAILABLE" });
+    expect(mocks.recordAiUsage).toHaveBeenCalledWith("owner", "chat", usage);
   });
   it.each([["free", "requirePro", "PRO_REQUIRED"], ["limit", "assertDailyLimit", "RATE_LIMITED"]] as const)("does not call Claude for %s", async (_name, method, code) => {
     mocks[method].mockRejectedValueOnce(new AppError(code));

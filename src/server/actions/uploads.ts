@@ -19,7 +19,8 @@ import { sniffFile } from "@/lib/ingest/sniff";
 import { detectTable, isSummaryRow, tableAtHeader, type TableGuess } from "@/lib/ingest/table";
 import { adminStorage, storagePathFor } from "@/server/admin";
 import { categorizeTransactions } from "@/server/actions/categorize";
-import { assertDailyLimit, recordAiUsage } from "@/server/limits";
+import { withAiUsage } from "@/server/ai-usage";
+import { assertDailyLimit } from "@/server/limits";
 import { logger } from "@/server/logger";
 import { proposeMapping } from "@/services/claude/mapper";
 import { createServerSupabase } from "@/services/supabase/server";
@@ -118,9 +119,8 @@ export async function analyzeUpload(userId: string, uploadId: string, input: z.i
     try {
       await assertDailyLimit(userId, "mapping");
       const masked = maskSamples(table.headers, table.dataRows.filter((row) => !isSummaryRow(row)).slice(0, 5));
-      const proposed = await proposeMapping(masked); const candidate = { headerRowIndex: table.headerRowIndex, columns: proposed.mapping };
+      const proposed = await withAiUsage(userId, "mapping", () => proposeMapping(masked)); const candidate = { headerRowIndex: table.headerRowIndex, columns: proposed.mapping };
       if (validateMapping(candidate, table).ok) { mapping = candidate; source = "ai"; }
-      await recordAiUsage(userId, "mapping", proposed.usage);
     } catch (error) { logger.warn("upload.mapping_unavailable", { code: error instanceof AppError ? error.code : "UNKNOWN" }); }
   }
   const { error } = await supabase.from("uploads").update({ status: "awaiting_confirm", mapping: mapping as Json, header_signature: signature, error_code: null }).eq("user_id", userId).eq("id", uploadId); db(error);

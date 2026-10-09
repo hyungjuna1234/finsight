@@ -3,10 +3,9 @@ import "server-only";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 
-import { AppError } from "@/lib/domain/errors";
 import { columnMappingSchema, type MappingColumns } from "@/lib/ingest/mapping";
 import { getClaude } from "@/services/claude/client";
-import { MODELS, toUsage, type ClaudeUsage } from "@/services/claude/models";
+import { AiCallError, MODELS, toUsage, type ClaudeUsage } from "@/services/claude/models";
 
 const nullableColumn = z.number().int().nullable();
 const outputSchema = z.object({
@@ -51,11 +50,13 @@ export async function proposeMapping(input: {
       { timeout: 20_000 },
     );
   } catch {
-    throw new AppError("AI_UNAVAILABLE");
+    throw new AiCallError({ model: MODELS.mapping, inputTokens: 0, outputTokens: 0 });
   }
 
+  // 여기부터는 응답을 받았으므로 실패해도 쓴 토큰을 넘긴다.
+  const spent = toUsage(MODELS.mapping, response.usage);
   if (response.stop_reason !== "end_turn" || response.parsed_output === null) {
-    throw new AppError("AI_UNAVAILABLE");
+    throw new AiCallError(spent);
   }
 
   const { confidence, ...rawColumns } = response.parsed_output;
@@ -63,18 +64,18 @@ export async function proposeMapping(input: {
     (entry): entry is [keyof MappingColumns, number] => entry[1] !== null,
   );
   if (entries.some(([, index]) => index < 0 || index >= input.headers.length)) {
-    throw new AppError("AI_UNAVAILABLE");
+    throw new AiCallError(spent);
   }
   if (new Set([rawColumns.date, rawColumns.merchant, rawColumns.amount]).size !== 3) {
-    throw new AppError("AI_UNAVAILABLE");
+    throw new AiCallError(spent);
   }
 
   const parsedColumns = columnMappingSchema.shape.columns.safeParse(Object.fromEntries(entries));
-  if (!parsedColumns.success) throw new AppError("AI_UNAVAILABLE");
+  if (!parsedColumns.success) throw new AiCallError(spent);
 
   return {
     mapping: parsedColumns.data,
     confidence: Math.min(1, Math.max(0, confidence)),
-    usage: toUsage(MODELS.mapping, response.usage),
+    usage: spent,
   };
 }

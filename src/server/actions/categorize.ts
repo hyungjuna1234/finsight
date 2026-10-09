@@ -4,6 +4,7 @@ import { DEFAULT_CATEGORY, isCategory, type Category } from "@/lib/domain/catego
 import { AppError } from "@/lib/domain/errors";
 import type { CategorySource } from "@/lib/domain/types";
 import { categorizeByRule } from "@/lib/ingest/rules";
+import { recordFailedAiCall } from "@/server/ai-usage";
 import { recordAiUsage, remainingDailyQuota } from "@/server/limits";
 import { logger } from "@/server/logger";
 import { classify } from "@/services/claude/classifier";
@@ -84,7 +85,8 @@ export async function categorizeTransactions(
     let result: Awaited<ReturnType<typeof classify>>;
     try {
       result = await classify(chunk);
-    } catch {
+    } catch (error) {
+      await recordFailedAiCall(userId, "classify", error);
       const failedKeys = allowedBatches.slice(batchIndex).flat();
       for (const key of failedKeys) byKey.set(key, { category: DEFAULT_CATEGORY, source: "pending" });
       logger.warn("categorize.ai_failed", { keys: failedKeys.length });
