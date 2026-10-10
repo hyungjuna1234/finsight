@@ -25,7 +25,7 @@
 - **A01-7 SSRF(CWE-918)**: 서버의 `fetch(`·`new URL(`·SDK 호출에 사용자가 고른 URL·호스트가 들어가는지 본다(`src/server`, `src/services`, `src/app/api`). `next.config.ts`의 `images.remotePatterns` 와일드카드도 이미지 최적화기를 통한 SSRF 통로다.
 - **A01-8 경로 조작(CWE-22)**: Storage 경로는 `{세션 uid}/{서버가 만든 uploadId}/original`. 사용자 파일명은 경로에 쓰지 않는다. `removePrefix`의 prefix는 uid로 시작하고 `/`로 끝난다. id는 uuid 형식 확인 뒤에 쓴다.
 - **A01-9 강제 탐색(CWE-425)**: 로그인 뒤 페이지가 모두 `PROTECTED_PREFIXES`에 있는지 `src/app` 페이지 목록과 비교한다. 진짜 방어선은 queries의 `requireUser()`이므로, queries를 거치지 않고 페이지에서 직접 데이터를 읽는 곳 → 🟠. proxy에서만 빠지고 queries가 막으면 🟡.
-- **A01-10 응답 노출(CWE-200·201)**: API 응답과 Client Component props가 필요한 필드만 담는지 본다(`select("*")` 결과를 통째로 넘기면 `storage_path`·`sha256`·원본 `mapping`까지 간다). 다른 사용자 데이터면 🔴, 본인 데이터의 내부 필드면 🟡. AR-07(마스킹 날짜 예외)은 수용됨.
+- **A01-10 응답 노출(CWE-200·201)**: API 응답과 Client Component props가 필요한 필드만 담는지 본다(`select("*")` 결과를 통째로 넘기면 `storage_path`·`sha256`·원본 `mapping`까지 간다). 다른 사용자 데이터면 🔴, 본인 데이터의 내부 필드면 🟡. AR-07(매핑 샘플의 날짜형 숫자)만 수용됨. 가맹점명 저장·분류 경로의 마스킹은 따로 판단한다.
 - 남용 상한·Pro·동의는 design(A06), 웹훅 무결성은 injection(A08)이 본다.
 
 ## A07:2025 Authentication Failures (인증 실패)
