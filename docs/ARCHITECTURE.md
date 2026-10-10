@@ -110,7 +110,7 @@ formatKRW(amount: KRW): string · toYearMonth(date: Date | IsoDate): YearMonth �
 ```
 POST /api/uploads {filename,size,sha256}
   → 같은 사용자·sha256의 done 업로드가 있으면 DUPLICATE_FILE
-  → uploads(status=uploaded) 생성, adminStorage.createUploadUrl('{uid}/{uploadId}/original') (upsert 금지)
+  → adminUploads.create로 uploads(status=uploaded) 생성(사용자는 uploads에 insert할 수 없다), adminStorage.createUploadUrl('{uid}/{uploadId}/original') (upsert 금지)
 브라우저: fetch PUT
 POST /api/uploads/:id/analyze {password?}   (maxDuration 60)
   → adminStorage.read → sniff → (pdf: readPdf(password) → pdfTable | 그 외: decode → detectTable)
@@ -142,7 +142,7 @@ requirePro: isProActive(entitlement, now) — plan='pro' AND (period_end IS NULL
 - `adminStorage` (1-ingest): `createUploadUrl(path)`, `read(path)`, `remove(paths)`, `removePrefix(prefix)`(prefix는 `/`로 끝남, 목록을 페이지 단위로 끝까지) · 5-launch: `listExpiredOriginals(before, limit)`
 - `adminEntitlements` (3-pro): `get(userId)`, `markFreeInsightUsed(userId)`(조건부 update), `releaseFreeInsight(userId)` · 4-billing: `upsertIfNewer(userId, value, startedAt)`
 - `adminAuth` (4-billing): `deleteUser(userId)`
-- `adminUploads` (5-launch cron): `markOriginalDeleted(ids, at)`, `listStale(before, limit)`, `deleteStale(ids, before)`
+- `adminUploads` (5-launch cron): `markOriginalDeleted(ids, at)`, `listStale(before, limit)`, `deleteStale(ids, before)` · `create({ userId, uploadId, filename, sha256, byteSize })`(createUpload 전용, 중복이면 `"duplicate"`)
 모든 함수는 `userId`나 경로를 인자로 받고, 요청 body가 아니라 세션에서 온 값만 넘긴다.
 
 ## 외부 서비스 래퍼 (`services/*`, 테스트는 `vi.mock`)
@@ -201,7 +201,7 @@ polar: createCheckout · getCheckout · createPortalSession · getCustomerState 
 | `consents` | id, user_id→auth.users cascade, kind(`privacy`,`overseas_transfer`,`terms`,`age14`), version, agreed_at default now() | SELECT·INSERT 본인 |
 | `entitlements` | user_id PK, plan(`free`,`pro`), status, period_end, cancel_at_period_end(기간 끝 해지 예약), synced_at, free_insight_used_at | SELECT 본인만 (쓰기는 admin) |
 | `cards` | id, user_id, name, institution, created_at · UNIQUE(user_id, name) | 본인 전체 |
-| `uploads` | id, user_id, card_id null, storage_path, filename, sha256, byte_size, status(`uploaded`,`awaiting_confirm`,`done`,`failed`), error_code, mapping jsonb, header_signature, period_from, period_to, counts jsonb, original_deleted_at, created_at · 부분 UNIQUE(user_id, sha256) WHERE status <> 'failed' | 본인 전체 |
+| `uploads` | id, user_id, card_id null, storage_path, filename, sha256, byte_size, status(`uploaded`,`awaiting_confirm`,`done`,`failed`), error_code, mapping jsonb, header_signature, period_from, period_to, counts jsonb, original_deleted_at, created_at · 부분 UNIQUE(user_id, sha256) WHERE status <> 'failed' | SELECT·DELETE 본인, UPDATE는 처리 컬럼만(card_id·status·error_code·mapping·header_signature·period_from·period_to·counts), INSERT는 admin |
 | `transactions` | id, user_id, card_id, upload_id→uploads cascade, occurred_on date, merchant_raw, merchant_key, amount_krw bigint CHECK≥0, kind, status, installment_months, foreign_amount numeric, foreign_currency, approval_no, category CHECK(CATEGORIES), category_source, identity_key, created_at · UNIQUE(user_id, identity_key) · INDEX(user_id, occurred_on) | 본인 전체 |
 | `header_mappings` | PK(user_id, signature), mapping jsonb, updated_at | 본인 전체 |
 | `category_overrides` | PK(user_id, merchant_key), category | 본인 전체 |

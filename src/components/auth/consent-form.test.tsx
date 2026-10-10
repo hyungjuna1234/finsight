@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -13,6 +13,8 @@ const { apiFetchMock, pushMock, trackMock } = vi.hoisted(() => ({
 vi.mock("@/components/ui/api-fetch", () => ({ apiFetch: apiFetchMock }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: pushMock }) }));
 vi.mock("@vercel/analytics", () => ({ track: trackMock }));
+
+import { chatStorageKey } from "@/components/chat/chat-storage";
 
 import { ConsentForm } from "./consent-form";
 
@@ -80,5 +82,14 @@ describe("ConsentForm", () => {
     const button = screen.getByRole("button", { name: "동의하지 않고 나가기" });
     expect(button.closest("form")).toHaveAttribute("action", "/auth/signout");
     expect(button.closest("form")).toHaveAttribute("method", "post");
+  });
+
+  it("동의하지 않고 나가면(로그아웃) 이 탭의 채팅 기록을 지운다", () => {
+    sessionStorage.setItem(chatStorageKey("user-1"), "[]");
+    render(<ConsentForm items={CONSENT_ITEMS} />);
+    const form = screen.getByRole("button", { name: "동의하지 않고 나가기" }).closest("form")!;
+    form.addEventListener("submit", (event) => event.preventDefault());
+    fireEvent.submit(form);
+    expect(sessionStorage.getItem(chatStorageKey("user-1"))).toBeNull();
   });
 });

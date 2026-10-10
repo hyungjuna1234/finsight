@@ -5,6 +5,7 @@ import * as XLSX from "xlsx";
 import * as cpexcel from "xlsx/dist/cpexcel.full.mjs";
 
 import type { Sniff, TextEncoding } from "./sniff";
+import { checkZipBudget } from "./zip-budget";
 
 XLSX.set_cptable(cpexcel);
 
@@ -92,7 +93,10 @@ export function sniffDelimiter(text: string): "," | "\t" | ";" {
   return best?.delimiter ?? ",";
 }
 
-export function parseDelimited(text: string, delimiter: string): string[][] {
+const MAX_PARSED_ROWS = UPLOAD_LIMITS.maxRows * 2;
+
+/** maxRows를 주면 그다음 행(maxRows + 1번째)까지만 만들고 멈춘다. 호출자가 길이로 초과를 판단한다. */
+export function parseDelimited(text: string, delimiter: string, maxRows: number = Number.POSITIVE_INFINITY): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let field = "";
@@ -115,6 +119,7 @@ export function parseDelimited(text: string, delimiter: string): string[][] {
     } else if (character === "\r" || character === "\n") {
       row.push(field);
       rows.push(row);
+      if (rows.length > maxRows) return rows;
       row = [];
       field = "";
       if (character === "\r" && text[index + 1] === "\n") index += 1;
@@ -161,12 +166,19 @@ export function decodeFile(bytes: Uint8Array, sniff: Sniff): Result<Sheet[], Dec
   if (sniff.kind === "text") {
     const decoded = decodeText(bytes, sniff.encoding);
     if (!decoded.ok) return decoded;
-    const parsed = parseDelimited(decoded.value, sniffDelimiter(decoded.value));
+    // 열을 채우면 행 수 × 열 수만큼 칸이 생긴다. 줄이 너무 많으면 채우기 전에 끝낸다(끝의 빈 줄은 여유를 둔다).
+    const parsed = parseDelimited(decoded.value, sniffDelimiter(decoded.value), MAX_PARSED_ROWS);
+    if (parsed.length > MAX_PARSED_ROWS) return err("TOO_MANY_ROWS");
     const width = parsed.reduce((maximum, row) => Math.max(maximum, row.length), 0);
     if (width > UPLOAD_LIMITS.maxColumns) return err("FILE_TOO_COMPLEX");
     const rows = trimTrailingEmptyRows(parsed.map((row) => Array.from({ length: width }, (_, index) => normalizeCell(row[index]))));
     if (rows.length > UPLOAD_LIMITS.maxRows) return err("TOO_MANY_ROWS");
     return ok([{ name: "Sheet1", rows }]);
+  }
+
+  if (sniff.kind === "xlsx") {
+    const budget = checkZipBudget(bytes);
+    if (!budget.ok) return budget;
   }
 
   try {

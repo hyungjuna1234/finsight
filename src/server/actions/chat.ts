@@ -8,7 +8,8 @@ import { daysBetween, isIsoDate, kstToday } from "@/lib/domain/month";
 import { escapeLike } from "@/lib/domain/tx-filters";
 import type { IsoDate } from "@/lib/domain/types";
 import { requireConsent, requirePro } from "@/server/auth";
-import { assertDailyLimit, recordAiUsage } from "@/server/limits";
+import { withAiUsage } from "@/server/ai-usage";
+import { assertDailyLimit } from "@/server/limits";
 import { loadTxViews, toTxView, type TxRow } from "@/server/tx-rows";
 import { chat, type ChatTool } from "@/services/claude/chat";
 import { createServerSupabase } from "@/services/supabase/server";
@@ -65,7 +66,6 @@ export async function sendChatMessage(userId: string, input: { history: ChatTurn
   await requireConsent(userId);
   await requirePro(userId);
   await assertDailyLimit(userId, "chat");
-  const { text, usage } = await chat({ history: normalizeHistory(input.history), message: input.message, tools: createChatTools(userId), today: kstToday() });
-  await recordAiUsage(userId, "chat", usage);
+  const { text } = await withAiUsage(userId, "chat", () => chat({ history: normalizeHistory(input.history), message: input.message, tools: createChatTools(userId), today: kstToday() }));
   return { text };
 }

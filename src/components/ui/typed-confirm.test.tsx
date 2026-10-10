@@ -3,9 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ api: vi.fn() }));
 vi.mock("@/components/ui/api-fetch", () => ({ apiFetch: mocks.api }));
+import { chatStorageKey } from "@/components/chat/chat-storage";
+
 import { TypedConfirm } from "./typed-confirm";
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); });
 
 it("확인 문구가 정확할 때만 요청하고 이동한다", async () => {
   const user = userEvent.setup(); mocks.api.mockResolvedValue(undefined);
@@ -27,4 +29,21 @@ it("오류 코드별 문구와 danger 버튼을 사용하고 요청 중 비활�
   expect(screen.getByRole("button", { name: "삭제 중" })).toBeDisabled();
   rejectRequest({ code: "BILLING_UNAVAILABLE" });
   expect(await screen.findByRole("alert")).toHaveTextContent("구독 해지 실패");
+});
+
+it("탈퇴·전체 삭제가 성공하면 이 탭의 채팅 기록을 지운다", async () => {
+  sessionStorage.setItem(chatStorageKey("u"), "[]");
+  const user = userEvent.setup(); mocks.api.mockResolvedValue(undefined);
+  render(<TypedConfirm phrase="전체 삭제" title="데이터 삭제" description="설명" submitLabel="전체 삭제" endpoint="/api/account/delete-data" redirectTo="/upload" />);
+  await user.type(screen.getByRole("textbox"), "전체 삭제"); await user.click(screen.getByRole("button", { name: "전체 삭제" }));
+  expect(sessionStorage.getItem(chatStorageKey("u"))).toBeNull();
+});
+
+it("삭제가 실패하면 채팅 기록을 지우지 않는다", async () => {
+  sessionStorage.setItem(chatStorageKey("u"), "[]");
+  const user = userEvent.setup(); mocks.api.mockRejectedValue({ code: "INTERNAL" });
+  render(<TypedConfirm phrase="전체 삭제" title="데이터 삭제" description="설명" submitLabel="전체 삭제" endpoint="/api/account/delete-data" redirectTo="/upload" />);
+  await user.type(screen.getByRole("textbox"), "전체 삭제"); await user.click(screen.getByRole("button", { name: "전체 삭제" }));
+  expect(await screen.findByRole("alert")).toBeInTheDocument();
+  expect(sessionStorage.getItem(chatStorageKey("u"))).toBe("[]");
 });

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppError } from "@/lib/domain/errors";
-import type { ClaudeUsage } from "@/services/claude/models";
+import { AiCallError, type ClaudeUsage } from "@/services/claude/models";
 
 const { classify, createServerSupabase, info, recordAiUsage, remainingDailyQuota, warn } = vi.hoisted(() => ({
   classify: vi.fn(),
@@ -125,6 +125,15 @@ describe("categorizeTransactions", () => {
     expect(recordAiUsage.mock.calls).toEqual([["user-1", "classify", usage(100)]]);
   });
 
+  it("Claude가 응답 뒤 실패해도 그 배치의 토큰을 기록하고 pending으로 둔다", async () => {
+    createServerSupabase.mockResolvedValue(fakeClient([], []).client);
+    classify.mockRejectedValueOnce(new AiCallError(usage(3)));
+    const result = await categorizeTransactions("user-1", [{ merchantKey: "미지 상점" }]);
+    expect(result.aiFailed).toBe(true);
+    expect(recordAiUsage.mock.calls).toEqual([["user-1", "classify", usage(3)]]);
+    expect(result.byKey.get("미지 상점")).toEqual({ category: "기타", source: "pending" });
+  });
+
   it("사용량 기록이 실패하면 AI 실패로 숨기지 않고 에러를 그대로 낸다", async () => {
     createServerSupabase.mockResolvedValue(fakeClient([], []).client);
     classify.mockResolvedValue({ categories: new Map([["미지 상점", "쇼핑"]]), usage: usage(1) });
@@ -139,12 +148,14 @@ describe("categorizeTransactions", () => {
     createServerSupabase.mockResolvedValue(fake.client);
     classify
       .mockImplementationOnce(async (keys: string[]) => ({ categories: new Map(keys.map((key) => [key, "기타"])), usage: usage(100) }))
-      .mockRejectedValueOnce(new Error("timeout"));
+      // 서비스는 응답 전 실패(타임아웃)도 토큰 0인 AiCallError로 던진다.
+      .mockRejectedValueOnce(new AiCallError(usage(0)));
     const rows = Array.from({ length: 250 }, (_, i) => ({ merchantKey: `미지 상점 ${i}` }));
     const result = await categorizeTransactions("user-1", rows);
     expect(classify).toHaveBeenCalledTimes(2);
     expect(result.aiFailed).toBe(true);
-    expect(recordAiUsage.mock.calls).toEqual([["user-1", "classify", usage(100)]]);
+    // 응답 전 실패도 상한에서 한 번으로 센다(타임아웃을 일부러 일으켜 상한을 피하지 못하게).
+    expect(recordAiUsage.mock.calls).toEqual([["user-1", "classify", usage(100)], ["user-1", "classify", usage(0)]]);
     expect(result.byKey.get("미지 상점 100")).toEqual({ category: "기타", source: "pending" });
     expect(result.byKey.get("미지 상점 249")).toEqual({ category: "기타", source: "pending" });
     expect(warn).toHaveBeenCalledWith("categorize.ai_failed", { keys: 150 });

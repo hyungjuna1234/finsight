@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { MODELS } from "./models";
+import { AiCallError, MODELS } from "./models";
 
 const toolRunner = vi.fn();
 vi.mock("@/services/claude/client", () => ({ getClaude: () => ({ beta: { messages: { toolRunner } } }) }));
@@ -33,5 +33,12 @@ describe("chat", () => {
     await expect(chat(input)).rejects.toMatchObject({ code: "AI_UNAVAILABLE" });
     toolRunner.mockImplementationOnce(() => { throw new Error("network"); });
     await expect(chat(input)).rejects.toMatchObject({ code: "AI_UNAVAILABLE" });
+  });
+
+  it("도구를 돈 뒤 max_tokens로 끝나면 누적 토큰을 AiCallError에 담는다", async () => {
+    toolRunner.mockReturnValue(iterable(message("tool_use", ""), message("max_tokens", "잘림")));
+    const error = await chat(input).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(AiCallError);
+    expect(error).toMatchObject({ code: "AI_UNAVAILABLE", usage: { model: MODELS.chat, inputTokens: 4, outputTokens: 6 } });
   });
 });

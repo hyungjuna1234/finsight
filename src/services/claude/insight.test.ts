@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { MODELS } from "./models";
+import { AiCallError, MODELS } from "./models";
 
 const parse = vi.fn();
 vi.mock("@/services/claude/client", () => ({ getClaude: () => ({ messages: { parse } }) }));
@@ -22,12 +22,21 @@ describe("writeInsight", () => {
     expect(parse.mock.calls[1]?.[0].messages[0].content).toContain("숫자 없이 다시 써 주세요");
   });
   it.each([
-    ["numbers", [response("1"), response("２")]],
-    ["refusal", [response("거절", "refusal")]],
-    ["null", [{ ...response("x"), parsed_output: null }]],
-  ])("maps %s failures", async (_name, values) => {
+    ["numbers", [response("1"), response("２")], 4],
+    ["refusal", [response("거절", "refusal")], 2],
+    ["null", [{ ...response("x"), parsed_output: null }], 2],
+  ] as const)("maps %s failures and keeps the spent tokens", async (_name, values, inputTokens) => {
     values.forEach((value) => parse.mockResolvedValueOnce(value));
-    await expect(writeInsight(metrics)).rejects.toMatchObject({ code: "AI_UNAVAILABLE" });
+    const error = await writeInsight(metrics).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(AiCallError);
+    expect(error).toMatchObject({ code: "AI_UNAVAILABLE", usage: { model: MODELS.insight, inputTokens } });
   });
   it("maps SDK failures", async () => { parse.mockImplementationOnce(async () => { throw new Error("network"); }); await expect(writeInsight(metrics)).rejects.toMatchObject({ code: "AI_UNAVAILABLE" }); });
+
+  it("두 번 모두 숫자가 들어가 실패하면 두 시도의 토큰을 AiCallError에 담는다", async () => {
+    parse.mockResolvedValueOnce(response("1건")).mockResolvedValueOnce(response("２건"));
+    const error = await writeInsight(metrics).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(AiCallError);
+    expect(error).toMatchObject({ code: "AI_UNAVAILABLE", usage: { model: MODELS.insight, inputTokens: 4, outputTokens: 6 } });
+  });
 });

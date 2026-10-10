@@ -116,6 +116,22 @@ export const adminStorage = {
 };
 
 export const adminUploads = {
+  // 사용자는 uploads에 insert할 수 없다(정리 큐를 오래된 가짜 행으로 채우지 못하게). 하루 상한을 거친 createUpload만 부른다.
+  async create(input: { userId: string; uploadId: string; filename: string; sha256: string; byteSize: number }): Promise<"created" | "duplicate"> {
+    const { error } = await createAdminSupabase().from("uploads").insert({
+      id: input.uploadId,
+      user_id: input.userId,
+      storage_path: storagePathFor(input.userId, input.uploadId),
+      filename: input.filename,
+      sha256: input.sha256,
+      byte_size: input.byteSize,
+      status: "uploaded",
+    });
+    if (error?.code === "23505") return "duplicate";
+    if (error) databaseError("admin.uploads.create", error);
+    return "created";
+  },
+
   async markOriginalDeleted(ids: string[], at: Date): Promise<number> {
     if (ids.length === 0) return 0;
     const { data, error } = await createAdminSupabase()

@@ -1,9 +1,14 @@
 import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AppError } from "@/lib/domain/errors";
+import { assertDailyLimit, recordAiUsage } from "@/server/limits";
+import { AiCallError } from "@/services/claude/models";
 import { syntheticPdf } from "@/test/fixtures/pdf";
 
-const { categorizeTransactions, createServerSupabase, proposeMapping, storageRead } = vi.hoisted(() => ({
+const { categorizeTransactions, createServerSupabase, createUploadUrl, proposeMapping, storageRead, uploadsCreate } = vi.hoisted(() => ({
+  createUploadUrl: vi.fn(),
+  uploadsCreate: vi.fn(),
   categorizeTransactions: vi.fn(),
   createServerSupabase: vi.fn(),
   proposeMapping: vi.fn(),
@@ -11,7 +16,8 @@ const { categorizeTransactions, createServerSupabase, proposeMapping, storageRea
 }));
 
 vi.mock("@/server/admin", () => ({
-  adminStorage: { createUploadUrl: vi.fn(), read: storageRead, remove: vi.fn(), removePrefix: vi.fn() },
+  adminStorage: { createUploadUrl, read: storageRead, remove: vi.fn(), removePrefix: vi.fn() },
+  adminUploads: { create: uploadsCreate },
   storagePathFor: (userId: string, uploadId: string) => `${userId}/${uploadId}/original`,
 }));
 vi.mock("@/services/supabase/server", () => ({ createServerSupabase }));
@@ -19,7 +25,7 @@ vi.mock("@/services/claude/mapper", () => ({ proposeMapping }));
 vi.mock("@/server/actions/categorize", () => ({ categorizeTransactions }));
 vi.mock("@/server/limits", () => ({ assertDailyLimit: vi.fn(), recordAiUsage: vi.fn() }));
 
-import { analyzeUpload, analyzeUploadBody, confirmUploadBody, createUploadBody, recategorizeUpload } from "./uploads";
+import { analyzeUpload, analyzeUploadBody, confirmUploadBody, createUpload, createUploadBody, recategorizeUpload } from "./uploads";
 
 describe("upload action schemas", () => {
   it("accepts only a safe create payload", () => {
@@ -135,5 +141,72 @@ describe("upload categorization limits", () => {
 
     await expect(recategorizeUpload("user-1", upload.id)).rejects.toMatchObject({ code: "RATE_LIMITED", status: 429 });
     expect(client.from).toHaveBeenLastCalledWith("uploads");
+  });
+});
+
+describe("analyze mapping usage", () => {
+  const uploadId = "5b0f4e8e-2c1d-4f6a-9b3e-0d2c4a6b8e10";
+  const csv = new TextEncoder().encode("이용일,가맹점,금액\n2026-09-01,가게,1000\n2026-09-02,다른 가게,2000\n2026-09-03,세번째,3000\n");
+
+  beforeEach(() => {
+    proposeMapping.mockReset();
+    vi.mocked(recordAiUsage).mockReset();
+    storageRead.mockReset().mockResolvedValue(csv);
+    const upload = { id: uploadId, user_id: "user-1", status: "uploaded", filename: "card.csv", storage_path: `user-1/${uploadId}/original`, sha256: createHash("sha256").update(csv).digest("hex"), mapping: null };
+    createServerSupabase.mockReset().mockResolvedValue({
+      from: vi.fn((table: string) => {
+        const query = {
+          select: vi.fn(() => query),
+          eq: vi.fn(() => query),
+          update: vi.fn(() => query),
+          maybeSingle: vi.fn(async () => ({ data: table === "uploads" ? upload : null, error: null })),
+          then(resolve: (value: unknown) => unknown) { return Promise.resolve(resolve({ error: null })); },
+        };
+        return query;
+      }),
+    });
+  });
+
+  it("Claude가 응답 뒤 실패해도 매핑 토큰을 기록하고 매핑 없이 계속한다", async () => {
+    const usage = { model: "m", inputTokens: 11, outputTokens: 5 };
+    proposeMapping.mockRejectedValueOnce(new AiCallError(usage));
+    const result = await analyzeUpload("user-1", uploadId);
+    expect(result.mapping).toBeNull();
+    expect(vi.mocked(recordAiUsage).mock.calls).toEqual([["user-1", "mapping", usage]]);
+  });
+});
+
+describe("createUpload", () => {
+  const insert = vi.fn();
+  beforeEach(() => {
+    insert.mockReset();
+    uploadsCreate.mockReset().mockResolvedValue("created");
+    createUploadUrl.mockReset().mockResolvedValue("https://upload.example/signed");
+    createServerSupabase.mockReset().mockResolvedValue({
+      from: vi.fn(() => {
+        const query = { select: vi.fn(() => query), eq: vi.fn(() => query), neq: vi.fn(() => query), insert, maybeSingle: vi.fn(async () => ({ data: null, error: null })) };
+        return query;
+      }),
+    });
+  });
+
+  it("행은 사용자 client가 아니라 서버(adminUploads.create)가 만든다", async () => {
+    const result = await createUpload("user-1", { filename: "card.csv", size: 10, sha256: "a".repeat(64) });
+    expect(insert).not.toHaveBeenCalled();
+    expect(uploadsCreate).toHaveBeenCalledWith({ userId: "user-1", uploadId: result.uploadId, filename: "card.csv", sha256: "a".repeat(64), byteSize: 10 });
+    expect(result.uploadUrl).toBe("https://upload.example/signed");
+  });
+
+  it("하루 업로드 상한에 걸리면 행도 서명 URL도 만들지 않는다", async () => {
+    vi.mocked(assertDailyLimit).mockRejectedValueOnce(new AppError("RATE_LIMITED"));
+    await expect(createUpload("user-1", { filename: "card.csv", size: 10, sha256: "a".repeat(64) })).rejects.toMatchObject({ code: "RATE_LIMITED" });
+    expect(uploadsCreate).not.toHaveBeenCalled();
+    expect(createUploadUrl).not.toHaveBeenCalled();
+  });
+
+  it("같은 파일이 동시에 만들어지면 DUPLICATE_FILE", async () => {
+    uploadsCreate.mockResolvedValueOnce("duplicate");
+    await expect(createUpload("user-1", { filename: "card.csv", size: 10, sha256: "a".repeat(64) })).rejects.toMatchObject({ code: "DUPLICATE_FILE" });
+    expect(createUploadUrl).not.toHaveBeenCalled();
   });
 });
