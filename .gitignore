@@ -26,3 +26,6 @@ phases/**/step*-output.json
 *.pem
 build/
 npm-debug.log*
+
+# OWASP scan reports: the repo is public and reports describe unfixed weaknesses (keep locally)
+docs/security/owasp-*.md
