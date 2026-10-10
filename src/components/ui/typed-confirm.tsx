@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { clearChatStorage } from "@/components/chat/chat-storage";
 import { apiFetch } from "@/components/ui/api-fetch";
 import type { ErrorCode } from "@/lib/domain/errors";
 
@@ -23,7 +24,8 @@ export function TypedConfirm({ phrase, title, description, submitLabel, endpoint
   async function submit(event: React.FormEvent) {
     event.preventDefault(); if (value !== phrase || pending) return;
     setPending(true); setError(null);
-    try { await apiFetch(endpoint, { method: "POST", body: { confirm: phrase } }); window.location.assign(redirectTo); }
+    // 탈퇴·전체 삭제 뒤에는 지운 거래가 담긴 대화가 이 탭에 남지 않게 한다.
+    try { await apiFetch(endpoint, { method: "POST", body: { confirm: phrase } }); clearChatStorage(); window.location.assign(redirectTo); }
     catch (caught) {
       const code = errorCode(caught);
       setError(code === null ? "처리하지 못했어요. 잠시 후 다시 시도해 주세요." : errorMessages?.[code] ?? "처리하지 못했어요. 잠시 후 다시 시도해 주세요.");

@@ -79,4 +79,35 @@ describe("checkZipBudget", () => {
   it("zip이 아니면 CORRUPT_FILE", () => {
     expect(checkZipBudget(new TextEncoder().encode("not a zip at all"))).toEqual({ ok: false, error: "CORRUPT_FILE" });
   });
+
+  // SheetJS(cfb parse_zip)와 다르게 읽는 틈을 노린 zip. 상한 검사는 SheetJS가 푸는 것과 같은 바이트를 재야 한다.
+  it("중앙 디렉터리가 stored라고 속여도 로컬 헤더의 deflate로 풀어서 잰다", () => {
+    const bytes = Buffer.from(zip([{ name: "xl/a.xml", data: new Uint8Array(2_000) }]));
+    const centralStart = bytes.readUInt32LE(bytes.length - 22 + 16);
+    bytes.writeUInt16LE(0, centralStart + 10);
+    bytes.writeUInt32LE(5, centralStart + 20);
+    expect(checkZipBudget(new Uint8Array(bytes), 1_000)).toEqual({ ok: false, error: "FILE_TOO_COMPLEX" });
+  });
+
+  it("EOCD의 이 디스크 항목 수와 전체 항목 수가 다르면 거부한다", () => {
+    const bytes = Buffer.from(zip([{ name: "a", data: new Uint8Array(10), method: 0 }]));
+    bytes.writeUInt16LE(2, bytes.length - 22 + 8);
+    expect(checkZipBudget(new Uint8Array(bytes)).ok).toBe(false);
+  });
+
+  it("파일 끝 가까이 잘린 EOCD도 SheetJS처럼 찾아서 미끼 EOCD에 속지 않는다", () => {
+    const bomb = Buffer.from(zip([{ name: "xl/a.xml", data: new Uint8Array(2_000) }]));
+    const bombEnd = bomb.subarray(bomb.length - 22, bomb.length - 2);
+    const decoy = Buffer.from(zip([{ name: "a", data: new Uint8Array(1), method: 0 }]));
+    const decoyLocal = decoy.subarray(0, decoy.length - 22);
+    const decoyEnd = Buffer.from(decoy.subarray(decoy.length - 22));
+    const bombBody = bomb.subarray(0, bomb.length - 22);
+    // 미끼 zip을 폭탄 뒤에 붙이고 미끼 EOCD의 오프셋을 옮긴 뒤, 마지막 20바이트에 진짜(잘린) EOCD를 둔다.
+    const decoyCentral = decoyEnd.readUInt32LE(16);
+    const shifted = Buffer.from(decoyLocal);
+    shifted.writeUInt32LE(bombBody.length, decoyCentral + 42);
+    decoyEnd.writeUInt32LE(bombBody.length + decoyCentral, 16);
+    const bytes = Buffer.concat([bombBody, shifted, decoyEnd, bombEnd]);
+    expect(checkZipBudget(new Uint8Array(bytes), 1_000)).toEqual({ ok: false, error: "FILE_TOO_COMPLEX" });
+  });
 });

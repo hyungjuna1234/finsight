@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { recordAiUsage } from "@/server/limits";
+import { AppError } from "@/lib/domain/errors";
+import { assertDailyLimit, recordAiUsage } from "@/server/limits";
 import { AiCallError } from "@/services/claude/models";
 import { syntheticPdf } from "@/test/fixtures/pdf";
 
@@ -194,6 +195,13 @@ describe("createUpload", () => {
     expect(insert).not.toHaveBeenCalled();
     expect(uploadsCreate).toHaveBeenCalledWith({ userId: "user-1", uploadId: result.uploadId, filename: "card.csv", sha256: "a".repeat(64), byteSize: 10 });
     expect(result.uploadUrl).toBe("https://upload.example/signed");
+  });
+
+  it("하루 업로드 상한에 걸리면 행도 서명 URL도 만들지 않는다", async () => {
+    vi.mocked(assertDailyLimit).mockRejectedValueOnce(new AppError("RATE_LIMITED"));
+    await expect(createUpload("user-1", { filename: "card.csv", size: 10, sha256: "a".repeat(64) })).rejects.toMatchObject({ code: "RATE_LIMITED" });
+    expect(uploadsCreate).not.toHaveBeenCalled();
+    expect(createUploadUrl).not.toHaveBeenCalled();
   });
 
   it("같은 파일이 동시에 만들어지면 DUPLICATE_FILE", async () => {

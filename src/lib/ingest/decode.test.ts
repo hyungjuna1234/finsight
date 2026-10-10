@@ -1,3 +1,4 @@
+import { deflateRawSync } from "node:zlib";
 import { allFixtures, getFixture } from "@/test/fixtures/statements";
 import iconv from "iconv-lite";
 import { describe, expect, it } from "vitest";
@@ -149,6 +150,19 @@ describe("text decoding and delimited parsing", () => {
     const directory = Buffer.concat(centrals); const end = Buffer.alloc(22);
     end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(entries, 8); end.writeUInt16LE(entries, 10); end.writeUInt32LE(directory.length, 12); end.writeUInt32LE(offset, 16);
     const bytes = new Uint8Array(Buffer.concat([...parts, directory, end]));
+    expect(decodeFile(bytes, { kind: "xlsx", extension: "xlsx", encoding: null } as Sniff)).toEqual({ ok: false, error: "FILE_TOO_COMPLEX" });
+  });
+
+  it("중앙 디렉터리를 속인 xlsx 압축 폭탄도 SheetJS 전에 FILE_TOO_COMPLEX", () => {
+    const zeros = new Uint8Array(65 * 1024 * 1024);
+    const data = deflateRawSync(zeros);
+    const name = Buffer.from("xl/worksheets/sheet1.xml");
+    const local = Buffer.alloc(30); local.writeUInt32LE(0x04034b50, 0); local.writeUInt16LE(8, 8); local.writeUInt32LE(data.length, 18); local.writeUInt32LE(zeros.length, 22); local.writeUInt16LE(name.length, 26);
+    const central = Buffer.alloc(46); central.writeUInt32LE(0x02014b50, 0); central.writeUInt16LE(0, 10); central.writeUInt32LE(5, 20); central.writeUInt32LE(5, 24); central.writeUInt16LE(name.length, 28);
+    const body = Buffer.concat([local, name, data]);
+    const directory = Buffer.concat([central, name]);
+    const end = Buffer.alloc(22); end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(1, 8); end.writeUInt16LE(1, 10); end.writeUInt32LE(directory.length, 12); end.writeUInt32LE(body.length, 16);
+    const bytes = new Uint8Array(Buffer.concat([body, directory, end]));
     expect(decodeFile(bytes, { kind: "xlsx", extension: "xlsx", encoding: null } as Sniff)).toEqual({ ok: false, error: "FILE_TOO_COMPLEX" });
   });
 });
