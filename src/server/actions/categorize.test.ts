@@ -148,12 +148,14 @@ describe("categorizeTransactions", () => {
     createServerSupabase.mockResolvedValue(fake.client);
     classify
       .mockImplementationOnce(async (keys: string[]) => ({ categories: new Map(keys.map((key) => [key, "기타"])), usage: usage(100) }))
-      .mockRejectedValueOnce(new Error("timeout"));
+      // 서비스는 응답 전 실패(타임아웃)도 토큰 0인 AiCallError로 던진다.
+      .mockRejectedValueOnce(new AiCallError(usage(0)));
     const rows = Array.from({ length: 250 }, (_, i) => ({ merchantKey: `미지 상점 ${i}` }));
     const result = await categorizeTransactions("user-1", rows);
     expect(classify).toHaveBeenCalledTimes(2);
     expect(result.aiFailed).toBe(true);
-    expect(recordAiUsage.mock.calls).toEqual([["user-1", "classify", usage(100)]]);
+    // 응답 전 실패도 상한에서 한 번으로 센다(타임아웃을 일부러 일으켜 상한을 피하지 못하게).
+    expect(recordAiUsage.mock.calls).toEqual([["user-1", "classify", usage(100)], ["user-1", "classify", usage(0)]]);
     expect(result.byKey.get("미지 상점 100")).toEqual({ category: "기타", source: "pending" });
     expect(result.byKey.get("미지 상점 249")).toEqual({ category: "기타", source: "pending" });
     expect(warn).toHaveBeenCalledWith("categorize.ai_failed", { keys: 150 });

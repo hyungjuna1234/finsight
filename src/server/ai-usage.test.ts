@@ -27,6 +27,12 @@ describe("withAiUsage", () => {
     expect(recordAiUsage.mock.calls).toEqual([["u", "insight", usage]]);
   });
 
+  it("응답 전 실패(토큰 0)도 한 행으로 기록해 상한에서 한 번으로 센다", async () => {
+    const zero = { model: "m", inputTokens: 0, outputTokens: 0 };
+    await expect(withAiUsage("u", "chat", async () => { throw new AiCallError(zero); })).rejects.toBeInstanceOf(AiCallError);
+    expect(recordAiUsage.mock.calls).toEqual([["u", "chat", zero]]);
+  });
+
   it("Claude 호출 오류가 아니면 기록하지 않는다", async () => {
     await expect(withAiUsage("u", "chat", async () => { throw new AppError("INTERNAL"); })).rejects.toMatchObject({ code: "INTERNAL" });
     expect(recordAiUsage).not.toHaveBeenCalled();
