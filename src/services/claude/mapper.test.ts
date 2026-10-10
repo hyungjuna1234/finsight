@@ -87,12 +87,11 @@ describe("proposeMapping", () => {
     ["missing parsed output", response({ parsed_output: null })],
     ["out-of-range index", response({ parsed_output: { ...response().parsed_output as object, amount: 9 } })],
     ["overlapping required columns", response({ parsed_output: { ...response().parsed_output as object, merchant: 0 } })],
-  ])("maps %s to AI_UNAVAILABLE", async (_name, value) => {
+  ])("maps %s to AI_UNAVAILABLE and keeps the spent tokens", async (_name, value) => {
     parseMock.mockResolvedValue(value);
-    await expect(proposeMapping({ headers, samples })).rejects.toMatchObject({
-      code: "AI_UNAVAILABLE",
-      detail: undefined,
-    });
+    const error = await proposeMapping({ headers, samples }).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(AiCallError);
+    expect(error).toMatchObject({ code: "AI_UNAVAILABLE", detail: undefined, usage: { model: MODELS.mapping, inputTokens: 31, outputTokens: 17 } });
   });
 
   it.each(["connection", "rate limit", "unexpected"])(

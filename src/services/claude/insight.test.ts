@@ -22,12 +22,14 @@ describe("writeInsight", () => {
     expect(parse.mock.calls[1]?.[0].messages[0].content).toContain("숫자 없이 다시 써 주세요");
   });
   it.each([
-    ["numbers", [response("1"), response("２")]],
-    ["refusal", [response("거절", "refusal")]],
-    ["null", [{ ...response("x"), parsed_output: null }]],
-  ])("maps %s failures", async (_name, values) => {
+    ["numbers", [response("1"), response("２")], 4],
+    ["refusal", [response("거절", "refusal")], 2],
+    ["null", [{ ...response("x"), parsed_output: null }], 2],
+  ] as const)("maps %s failures and keeps the spent tokens", async (_name, values, inputTokens) => {
     values.forEach((value) => parse.mockResolvedValueOnce(value));
-    await expect(writeInsight(metrics)).rejects.toMatchObject({ code: "AI_UNAVAILABLE" });
+    const error = await writeInsight(metrics).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(AiCallError);
+    expect(error).toMatchObject({ code: "AI_UNAVAILABLE", usage: { model: MODELS.insight, inputTokens } });
   });
   it("maps SDK failures", async () => { parse.mockImplementationOnce(async () => { throw new Error("network"); }); await expect(writeInsight(metrics)).rejects.toMatchObject({ code: "AI_UNAVAILABLE" }); });
 

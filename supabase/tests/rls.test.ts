@@ -144,4 +144,19 @@ describe("database RLS and grants", () => {
     const deleted = await db.query("delete from uploads where id = $1", [UPLOAD_A]);
     expect(deleted.affectedRows).toBe(1);
   });
+
+  it("grants owners UPDATE on exactly the upload processing columns", async () => {
+    await asOwner(db);
+    const granted = await db.query<{ column_name: string }>("select column_name from information_schema.column_privileges where table_schema = 'public' and table_name = 'uploads' and grantee = 'authenticated' and privilege_type = 'UPDATE' order by column_name");
+    expect(granted.rows.map((row) => row.column_name)).toEqual(["card_id", "counts", "error_code", "header_signature", "mapping", "period_from", "period_to", "status"]);
+  });
+
+  it("does not let an upload go back to 'uploaded' so it cannot re-enter the stale cleanup queue", async () => {
+    await asService(db);
+    await db.query("insert into uploads (id, user_id, storage_path, filename, sha256, byte_size, status) values ($2::uuid, $1::uuid, $1::text || '/' || $2::text || '/original', 'a.csv', 'sha-a', 10, 'done')", [USER_A, UPLOAD_A]);
+    await asUser(db, USER_A);
+    await expectDenied(db.query("update uploads set status = 'uploaded' where id = $1", [UPLOAD_A]));
+    const failed = await db.query("update uploads set status = 'failed' where id = $1", [UPLOAD_A]);
+    expect(failed.affectedRows).toBe(1);
+  });
 });
