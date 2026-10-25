@@ -1,13 +1,15 @@
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { DashboardModel } from "@/lib/analytics/dashboard";
 import type { Journey } from "@/lib/domain/journey";
-import { CategoryChart } from "./category-chart";
 import { MonthPicker } from "./month-picker";
 import { SummaryTiles } from "./summary-tiles";
 import { StartChecklist } from "./start-checklist";
 import { TopMerchants } from "./top-merchants";
 import { UploadBanner } from "./upload-banner";
+
+const CategoryChart = dynamic(() => import("./category-chart").then((m) => m.CategoryChart));
 
 export function DashboardView({ data, basePath, proTeasers, showTransactionsLink = true, journey }: { data: DashboardModel; basePath: string; proTeasers?: ReactNode; showTransactionsLink?: boolean; journey?: Journey }) {
   return <main className="space-y-8">

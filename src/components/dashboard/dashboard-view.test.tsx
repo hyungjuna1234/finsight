@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { expect, it } from "vitest";
 import { buildDashboardModel } from "@/lib/analytics/dashboard";
 import type { IsoDate, YearMonth } from "@/lib/domain/types";
@@ -9,9 +9,9 @@ import { DashboardView } from "./dashboard-view";
 const data = buildDashboardModel({ txs: [makeTx({ merchantRaw: "서점", merchantKey: "서점", category: "교육", amountKrw: 18_000 })], month: "2026-09" as YearMonth, availableMonths: ["2026-09" as YearMonth], today: "2026-10-03" as IsoDate });
 const journey: Journey = { checklist: [{ key: "signup", done: true }, { key: "first_upload", done: true }, { key: "three_months", done: false, progress: { now: 1, goal: 3 } }, { key: "first_insight", done: false }], primary: "three_months" };
 
-it("대시보드 섹션과 거래 링크 및 선택적 Pro 슬롯을 표시한다", () => {
+it("대시보드 섹션과 거래 링크 및 선택적 Pro 슬롯을 표시한다", async () => {
   render(<DashboardView data={data} basePath="/dashboard" proTeasers={<p>잠긴 기능</p>} />);
-  expect(screen.getAllByText("₩18,000")).toHaveLength(3);
+  await waitFor(() => expect(screen.getAllByText("₩18,000")).toHaveLength(3));
   expect(screen.getByRole("link", { name: "거래 전체 보기" })).toHaveAttribute("href", "/transactions?month=2026-09");
   expect(screen.getByRole("region", { name: "Pro 미리보기" })).toHaveTextContent("잠긴 기능");
 });
