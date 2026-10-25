@@ -8,6 +8,8 @@ import {
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
+  if (!isProtectedPath(request.nextUrl.pathname)) return response;
+
   let pendingCookies: SupabaseCookie[] = [];
   let pendingHeaders: Record<string, string> = {};
   let supabase;
@@ -32,7 +34,7 @@ export async function proxy(request: NextRequest) {
   } catch {
     loggedIn = false;
   }
-  if (!loggedIn && isProtectedPath(request.nextUrl.pathname)) {
+  if (!loggedIn) {
     response = NextResponse.redirect(
       new URL(loginRedirectPath(request.nextUrl.pathname, request.nextUrl.search), request.url),
     );
